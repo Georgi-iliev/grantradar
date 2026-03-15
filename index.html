@@ -1,0 +1,888 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <!--
+     ______                            __
+    / ____/___  ____ ___  ____  __  __/ /____  _____
+   / /   / __ \/ __ `__ \/ __ \/ / / / __/ _ \/ ___/
+  / /___/ /_/ / / / / / / /_/ / /_/ / /_/  __/ /
+  \____/\____/_/ /_/ /_/ .___/\__,_/\__/\___/_/
+                      /_/
+      Created with Perplexity Computer
+      https://www.perplexity.ai/computer
+  -->
+  <meta name="generator" content="Perplexity Computer">
+  <meta name="author" content="Perplexity Computer">
+  <meta property="og:see_also" content="https://www.perplexity.ai/computer">
+  <link rel="author" href="https://www.perplexity.ai/computer">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>GrantRadar — UK & EU Funding Dashboard</title>
+  <meta name="description" content="Track the latest InnovateUK, UKRI, SBRI, Wellcome Trust, EIC, Horizon Europe, EIT, Eureka and ERC grant opportunities for universities and businesses." />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { -webkit-font-smoothing: antialiased; scroll-behavior: smooth; }
+    body { font-family: 'Inter', system-ui, sans-serif; font-size: 14px; line-height: 1.5; background: #0d1117; color: #e6edf3; min-height: 100dvh; }
+    button { cursor: pointer; background: none; border: none; font: inherit; color: inherit; }
+    a { color: inherit; text-decoration: none; }
+    input { font: inherit; color: inherit; }
+    :root {
+      --bg: #0d1117; --surface: #161b22; --surface2: #21262d; --surface3: #2d333b;
+      --border: #30363d; --border2: #21262d;
+      --text: #e6edf3; --text-muted: #8b949e; --text-faint: #484f58;
+      --primary: #3b82f6; --primary-dim: #1d4ed8; --primary-bg: rgba(59,130,246,0.12);
+      --green: #3fb950; --green-bg: rgba(63,185,80,0.12);
+      --yellow: #d29922; --yellow-bg: rgba(210,153,34,0.12);
+      --red: #f85149; --red-bg: rgba(248,81,73,0.12);
+      --orange: #f0883e; --orange-bg: rgba(240,136,62,0.12);
+      --purple: #a371f7; --purple-bg: rgba(163,113,247,0.12);
+      --teal: #2dd4bf; --teal-bg: rgba(45,212,191,0.12);
+      --pink: #ec4899; --pink-bg: rgba(236,72,153,0.12);
+      --radius: 8px; --radius-lg: 12px; --shadow: 0 4px 20px rgba(0,0,0,0.5);
+    }
+    .app { display: flex; flex-direction: column; min-height: 100dvh; }
+
+    /* Header */
+    .header { position: sticky; top: 0; z-index: 40; background: rgba(13,17,23,0.94); backdrop-filter: blur(14px); border-bottom: 1px solid var(--border); padding: 0 24px; height: 56px; display: flex; align-items: center; gap: 16px; }
+    .logo { display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
+    .logo-text { font-size: 15px; font-weight: 700; }
+    .logo-sub { font-size: 11px; color: var(--text-muted); }
+    .search-wrap { flex: 1; max-width: 520px; position: relative; }
+    .search-wrap svg { position: absolute; left: 11px; top: 50%; transform: translateY(-50%); color: var(--text-muted); pointer-events: none; }
+    .search-input { width: 100%; background: var(--surface2); border: 1px solid var(--border); border-radius: 20px; padding: 7px 36px; font-size: 13px; color: var(--text); outline: none; transition: border-color 0.15s; }
+    .search-input:focus { border-color: var(--primary); }
+    .search-clear { position: absolute; right: 11px; top: 50%; transform: translateY(-50%); color: var(--text-muted); display: none; }
+    .search-clear.visible { display: flex; }
+    .header-actions { display: flex; align-items: center; gap: 8px; margin-left: auto; flex-shrink: 0; }
+    .refresh-badge { display: flex; align-items: center; gap: 6px; background: var(--surface2); border: 1px solid var(--border); border-radius: 20px; padding: 5px 12px; font-size: 12px; color: var(--text-muted); }
+    .pulse { width: 7px; height: 7px; border-radius: 50%; background: var(--green); animation: pulse 2s infinite; }
+    @keyframes pulse { 0%,100%{opacity:1;} 50%{opacity:0.3;} }
+    .saved-btn { display: flex; align-items: center; gap: 6px; background: var(--surface2); border: 1px solid var(--border); border-radius: 20px; padding: 5px 12px; font-size: 12px; color: var(--text-muted); transition: all 0.15s; }
+    .saved-btn:hover { border-color: var(--primary); color: var(--primary); }
+    .saved-count { background: var(--primary); color: #fff; border-radius: 10px; padding: 1px 6px; font-size: 10px; font-weight: 700; display: none; }
+    .saved-count.has-saved { display: inline; }
+
+    /* Stats bar */
+    .stats-bar { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; padding: 20px 24px 0; }
+    .stat-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 18px 20px; }
+    .stat-label { font-size: 11px; font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase; color: var(--text-muted); margin-bottom: 6px; }
+    .stat-value { font-size: 32px; font-weight: 700; line-height: 1; color: var(--text); }
+    .stat-sub { font-size: 12px; color: var(--text-muted); margin-top: 4px; }
+    .stat-value.open { color: var(--green); }
+    .stat-value.upcoming { color: var(--yellow); }
+    .stat-value.updated { color: var(--primary); font-size: 18px; line-height: 1.3; }
+
+    /* Main content */
+    .main { display: flex; flex: 1; gap: 0; }
+
+    /* Sidebar */
+    .sidebar { width: 228px; flex-shrink: 0; border-right: 1px solid var(--border); padding: 20px 0; overflow-y: auto; position: sticky; top: 56px; height: calc(100dvh - 56px); }
+    .sidebar-section { margin-bottom: 4px; }
+    .sidebar-section-title { display: flex; align-items: center; justify-content: space-between; padding: 8px 20px; font-size: 11px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: var(--text-muted); cursor: pointer; user-select: none; transition: color 0.15s; }
+    .sidebar-section-title:hover { color: var(--text); }
+    .sidebar-section-title svg { transition: transform 0.2s; flex-shrink: 0; }
+    .sidebar-section-title.collapsed svg { transform: rotate(-90deg); }
+    .sidebar-options { padding: 2px 0 8px; }
+    .sidebar-option { display: flex; align-items: center; justify-content: space-between; padding: 5px 20px; font-size: 13px; color: var(--text-muted); cursor: pointer; border-radius: 0; transition: all 0.1s; user-select: none; }
+    .sidebar-option:hover { color: var(--text); background: var(--surface2); }
+    .sidebar-option.active { color: var(--primary); }
+    .sidebar-option input[type=checkbox] { display: none; }
+    .sidebar-check { width: 15px; height: 15px; border: 1.5px solid var(--border); border-radius: 3px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; transition: all 0.1s; }
+    .sidebar-option.active .sidebar-check { background: var(--primary); border-color: var(--primary); }
+    .sidebar-check::after { content: ''; display: none; width: 4px; height: 7px; border: 1.5px solid #fff; border-top: none; border-left: none; transform: rotate(45deg) translate(-1px,-1px); }
+    .sidebar-option.active .sidebar-check::after { display: block; }
+    .option-count { font-size: 10px; color: var(--text-faint); background: var(--surface2); border-radius: 10px; padding: 1px 6px; min-width: 20px; text-align: center; }
+    .sidebar-divider { height: 1px; background: var(--border2); margin: 8px 20px; }
+    .clear-filters-btn { display: none; margin: 4px 20px 12px; padding: 6px 12px; border: 1px solid var(--border); border-radius: 6px; font-size: 12px; color: var(--text-muted); width: calc(100% - 40px); text-align: center; transition: all 0.15s; }
+    .clear-filters-btn:hover { border-color: var(--red); color: var(--red); }
+    .clear-filters-btn.visible { display: block; }
+
+    /* Content area */
+    .content { flex: 1; min-width: 0; padding: 20px 24px; }
+    .content-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; flex-wrap: wrap; gap: 8px; }
+    .results-count { font-size: 14px; font-weight: 600; }
+    .results-count span { color: var(--text-muted); font-weight: 400; }
+    .sort-wrap { display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--text-muted); }
+    .sort-select { background: var(--surface2); border: 1px solid var(--border); border-radius: 6px; padding: 5px 10px; font-size: 12px; color: var(--text); cursor: pointer; outline: none; }
+
+    /* Active filter chips */
+    .active-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 14px; }
+    .active-chip { display: flex; align-items: center; gap: 4px; background: var(--primary-bg); border: 1px solid var(--primary); border-radius: 20px; padding: 3px 10px; font-size: 11px; color: var(--primary); }
+    .active-chip button { color: var(--primary); opacity: 0.7; font-size: 14px; line-height: 1; padding: 0 0 0 2px; }
+    .active-chip button:hover { opacity: 1; }
+
+    /* Grant grid */
+    .grant-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 14px; }
+    .grant-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 16px; display: flex; flex-direction: column; gap: 10px; cursor: pointer; transition: border-color 0.15s, transform 0.1s, box-shadow 0.15s; position: relative; }
+    .grant-card:hover { border-color: var(--primary); box-shadow: var(--shadow); transform: translateY(-1px); }
+    .grant-card.saved-card { border-color: var(--yellow); }
+    .card-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 8px; }
+    .card-meta { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; min-width: 0; }
+    .funder-badge { font-size: 10px; font-weight: 700; padding: 3px 8px; border-radius: 5px; white-space: nowrap; flex-shrink: 0; }
+    .funder-iuk { background: rgba(59,130,246,0.15); color: #60a5fa; }
+    .funder-ukri { background: rgba(163,113,247,0.15); color: var(--purple); }
+    .funder-sbri { background: rgba(248,81,73,0.15); color: #ff7b72; }
+    .funder-wellcome { background: rgba(45,212,191,0.15); color: var(--teal); }
+    .funder-eic { background: rgba(240,136,62,0.15); color: var(--orange); }
+    .funder-horizon { background: rgba(45,212,191,0.15); color: var(--teal); }
+    .funder-eit { background: rgba(236,72,153,0.15); color: var(--pink); }
+    .funder-eureka { background: rgba(210,153,34,0.15); color: var(--yellow); }
+    .funder-erc { background: rgba(163,113,247,0.15); color: var(--purple); }
+    .programme-tag { font-size: 10px; color: var(--text-faint); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 110px; }
+    .card-actions { display: flex; align-items: center; gap: 4px; flex-shrink: 0; }
+    .status-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
+    .status-open { background: var(--green); animation: pulse 2.5s infinite; }
+    .status-upcoming { background: var(--yellow); }
+    .status-closed { background: var(--red); }
+    .status-badge { font-size: 10px; font-weight: 600; padding: 2px 7px; border-radius: 4px; }
+    .status-badge-open { background: var(--green-bg); color: var(--green); }
+    .status-badge-upcoming { background: var(--yellow-bg); color: var(--yellow); }
+    .status-badge-closed { background: var(--red-bg); color: var(--red); }
+    .save-btn { color: var(--text-faint); transition: color 0.15s, transform 0.1s; padding: 2px; }
+    .save-btn:hover { color: var(--yellow); transform: scale(1.1); }
+    .save-btn.saved { color: var(--yellow); }
+    .card-title { font-size: 13px; font-weight: 600; color: var(--text); line-height: 1.4; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+    .card-desc { font-size: 12px; color: var(--text-muted); line-height: 1.55; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+    .card-sectors { display: flex; flex-wrap: wrap; gap: 5px; }
+    .sector-tag { font-size: 10px; padding: 2px 8px; border-radius: 20px; border: 1px solid; font-weight: 500; }
+    .s-ai { background: rgba(163,113,247,0.1); color: var(--purple); border-color: rgba(163,113,247,0.3); }
+    .s-clean { background: rgba(63,185,80,0.1); color: var(--green); border-color: rgba(63,185,80,0.3); }
+    .s-deep { background: rgba(59,130,246,0.1); color: #60a5fa; border-color: rgba(59,130,246,0.3); }
+    .s-health { background: rgba(248,81,73,0.1); color: #ff7b72; border-color: rgba(248,81,73,0.3); }
+    .s-mfg { background: rgba(240,136,62,0.1); color: var(--orange); border-color: rgba(240,136,62,0.3); }
+    .s-energy { background: rgba(210,153,34,0.1); color: var(--yellow); border-color: rgba(210,153,34,0.3); }
+    .s-agri { background: rgba(45,212,191,0.1); color: var(--teal); border-color: rgba(45,212,191,0.3); }
+    .s-bio { background: rgba(236,72,153,0.1); color: var(--pink); border-color: rgba(236,72,153,0.3); }
+    .s-digital { background: rgba(59,130,246,0.1); color: #60a5fa; border-color: rgba(59,130,246,0.3); }
+    .s-space { background: rgba(163,113,247,0.1); color: var(--purple); border-color: rgba(163,113,247,0.3); }
+    .s-social { background: rgba(45,212,191,0.1); color: var(--teal); border-color: rgba(45,212,191,0.3); }
+    .s-mobility { background: rgba(240,136,62,0.1); color: var(--orange); border-color: rgba(240,136,62,0.3); }
+    .s-default { background: var(--surface2); color: var(--text-muted); border-color: var(--border); }
+    .card-footer { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 6px 10px; padding-top: 10px; border-top: 1px solid var(--border2); margin-top: auto; }
+    .card-footer-left { display: flex; align-items: center; gap: 6px; flex: 1 1 auto; min-width: 0; overflow: hidden; }
+    .card-footer-right { display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
+    .amount { font-size: 11px; font-weight: 700; font-variant-numeric: tabular-nums; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 150px; }
+    .amount-gbp { color: var(--green); }
+    .amount-eur { color: var(--primary); }
+    .amount-rolling { color: var(--text-muted); }
+    .eligibility { font-size: 11px; color: var(--text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 90px; }
+    .deadline { font-size: 11px; font-weight: 600; display: flex; align-items: center; gap: 3px; }
+    .deadline-urgent { color: var(--red); }
+    .deadline-soon { color: var(--yellow); }
+    .deadline-ok { color: var(--text-muted); }
+    .deadline-rolling { color: var(--text-faint); }
+    .apply-link { font-size: 11px; font-weight: 600; color: var(--primary); display: flex; align-items: center; gap: 3px; padding: 3px 8px; border: 1px solid var(--primary-bg); border-radius: 5px; transition: all 0.15s; }
+    .apply-link:hover { background: var(--primary-bg); }
+
+    /* Empty state */
+    .empty { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px; padding: 80px 24px; color: var(--text-muted); text-align: center; }
+    .empty svg { color: var(--text-faint); }
+    .empty h3 { font-size: 16px; font-weight: 600; color: var(--text); }
+    .empty p { font-size: 13px; max-width: 320px; }
+
+    /* Detail panel */
+    .detail-overlay { position: fixed; inset: 0; background: rgba(1,4,9,0.7); z-index: 50; opacity: 0; pointer-events: none; transition: opacity 0.2s; }
+    .detail-overlay.open { opacity: 1; pointer-events: all; }
+    .detail-panel { position: fixed; right: 0; top: 0; bottom: 0; width: 480px; max-width: 100vw; background: var(--surface); border-left: 1px solid var(--border); z-index: 51; transform: translateX(100%); transition: transform 0.25s cubic-bezier(0.4,0,0.2,1); overflow-y: auto; display: flex; flex-direction: column; }
+    .detail-panel.open { transform: translateX(0); }
+    .detail-top { padding: 20px 24px 0; }
+    .detail-close { display: flex; align-items: center; gap: 8px; margin-bottom: 16px; color: var(--text-muted); font-size: 13px; }
+    .detail-close button { display: flex; align-items: center; gap: 6px; padding: 6px 12px; border: 1px solid var(--border); border-radius: 6px; font-size: 12px; transition: all 0.15s; }
+    .detail-close button:hover { border-color: var(--text-muted); }
+    .detail-funder-row { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
+    .detail-title { font-size: 18px; font-weight: 700; line-height: 1.35; margin-bottom: 12px; }
+    .detail-status-row { display: flex; align-items: center; gap: 10px; margin-bottom: 20px; flex-wrap: wrap; }
+    .detail-body { padding: 0 24px 24px; flex: 1; }
+    .detail-desc { font-size: 13px; color: var(--text-muted); line-height: 1.65; margin-bottom: 20px; }
+    .detail-rows { display: flex; flex-direction: column; gap: 14px; margin-bottom: 24px; }
+    .detail-row { display: flex; gap: 14px; align-items: flex-start; }
+    .detail-row-icon { width: 32px; height: 32px; background: var(--surface2); border-radius: 8px; display: flex; align-items: center; justify-content: center; color: var(--text-muted); flex-shrink: 0; margin-top: 1px; }
+    .detail-row-label { font-size: 11px; color: var(--text-faint); font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 3px; }
+    .detail-row-value { font-size: 13px; font-weight: 500; }
+    .detail-sectors { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 20px; }
+    .detail-trl { margin-bottom: 20px; }
+    .trl-label { font-size: 11px; color: var(--text-faint); font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 8px; }
+    .trl-bar { height: 6px; background: var(--surface2); border-radius: 3px; overflow: hidden; margin-bottom: 4px; }
+    .trl-fill { height: 100%; background: linear-gradient(90deg, var(--primary), var(--teal)); border-radius: 3px; transition: width 0.4s ease; }
+    .trl-range { display: flex; justify-content: space-between; font-size: 10px; color: var(--text-faint); }
+    .detail-apply { display: flex; gap: 10px; padding: 20px 24px; border-top: 1px solid var(--border); background: var(--surface); position: sticky; bottom: 0; }
+    .btn-primary { flex: 1; background: var(--primary); color: #fff; border-radius: 8px; padding: 11px 20px; font-size: 14px; font-weight: 600; display: flex; align-items: center; justify-content: center; gap: 8px; transition: all 0.15s; }
+    .btn-primary:hover { background: var(--primary-dim); }
+    .btn-save { background: var(--surface2); border: 1px solid var(--border); border-radius: 8px; padding: 11px 16px; display: flex; align-items: center; gap: 6px; font-size: 13px; transition: all 0.15s; }
+    .btn-save:hover { border-color: var(--yellow); color: var(--yellow); }
+    .btn-save.saved { border-color: var(--yellow); color: var(--yellow); background: var(--yellow-bg); }
+
+    /* Saved view */
+    .saved-view { display: none; flex: 1; padding: 20px 24px; }
+    .saved-view.active { display: block; }
+    .main-content { display: flex; flex: 1; }
+    .main-content.saved-mode .main { display: none; }
+    .main-content.saved-mode .saved-view { display: block; }
+    .saved-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; }
+    .saved-title { font-size: 18px; font-weight: 700; }
+    .back-btn { display: flex; align-items: center; gap: 6px; font-size: 13px; color: var(--text-muted); padding: 6px 12px; border: 1px solid var(--border); border-radius: 6px; transition: all 0.15s; }
+    .back-btn:hover { border-color: var(--text-muted); color: var(--text); }
+
+    /* Footer */
+    .footer { border-top: 1px solid var(--border); padding: 16px 24px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px; }
+    .footer-left { font-size: 12px; color: var(--text-faint); }
+    .footer-right a { font-size: 12px; color: var(--text-faint); transition: color 0.15s; }
+    .footer-right a:hover { color: var(--text-muted); }
+
+    /* Scrollbar */
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+    ::-webkit-scrollbar-thumb:hover { background: var(--text-faint); }
+
+    @media (max-width: 900px) {
+      .sidebar { display: none; }
+      .stats-bar { grid-template-columns: repeat(2,1fr); }
+      .grant-grid { grid-template-columns: 1fr; }
+      .detail-panel { width: 100vw; }
+    }
+    @media (max-width: 600px) {
+      .stats-bar { grid-template-columns: 1fr; }
+      .header { padding: 0 14px; }
+      .content { padding: 16px 14px; }
+    }
+  </style>
+</head>
+<body>
+<div class="app" id="app">
+  <!-- Header -->
+  <header class="header">
+    <div class="logo">
+      <svg width="28" height="28" viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg" aria-label="GrantRadar logo">
+        <circle cx="14" cy="14" r="13" stroke="#3b82f6" stroke-width="1.5"/>
+        <circle cx="14" cy="14" r="8" stroke="#3b82f6" stroke-width="1" stroke-opacity="0.5"/>
+        <circle cx="14" cy="14" r="3" fill="#3b82f6"/>
+        <line x1="14" y1="1" x2="14" y2="5" stroke="#3b82f6" stroke-width="1.5" stroke-linecap="round"/>
+        <line x1="14" y1="23" x2="14" y2="27" stroke="#3b82f6" stroke-width="1.5" stroke-linecap="round"/>
+        <line x1="1" y1="14" x2="5" y2="14" stroke="#3b82f6" stroke-width="1.5" stroke-linecap="round"/>
+        <line x1="23" y1="14" x2="27" y2="14" stroke="#3b82f6" stroke-width="1.5" stroke-linecap="round"/>
+        <line x1="14" y1="14" x2="20" y2="7" stroke="#f0883e" stroke-width="1.5" stroke-linecap="round"/>
+      </svg>
+      <div>
+        <div class="logo-text">GrantRadar</div>
+        <div class="logo-sub">UK & EU Funding</div>
+      </div>
+    </div>
+    <div class="search-wrap">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+      <input class="search-input" id="searchInput" type="text" placeholder="Search grants, sectors, funders..." autocomplete="off" />
+      <button class="search-clear" id="searchClear" aria-label="Clear search">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+    <div class="header-actions">
+      <div class="refresh-badge"><div class="pulse"></div>Updated daily</div>
+      <button class="saved-btn" id="savedBtn" aria-label="View saved grants">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>
+        Saved <span class="saved-count" id="savedCount">0</span>
+      </button>
+    </div>
+  </header>
+
+  <!-- Stats bar -->
+  <div class="stats-bar" id="statsBar"></div>
+
+  <!-- Main content wrapper -->
+  <div class="main-content" id="mainContent">
+    <div class="main">
+      <!-- Sidebar -->
+      <aside class="sidebar" id="sidebar"></aside>
+      <!-- Content -->
+      <div class="content">
+        <div class="content-header">
+          <div class="results-count" id="resultsCount"></div>
+          <div class="sort-wrap">
+            Sort:
+            <select class="sort-select" id="sortSelect">
+              <option value="deadline">Deadline (soonest)</option>
+              <option value="amount">Amount (highest)</option>
+              <option value="funder">Funder A–Z</option>
+              <option value="newest">Recently added</option>
+            </select>
+          </div>
+        </div>
+        <div class="active-chips" id="activeChips"></div>
+        <div class="grant-grid" id="grantGrid"></div>
+      </div>
+    </div>
+    <!-- Saved view -->
+    <div class="saved-view" id="savedView">
+      <div class="saved-header">
+        <div class="saved-title">Saved Grants</div>
+        <button class="back-btn" id="backBtn">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
+          Back to all grants
+        </button>
+      </div>
+      <div class="grant-grid" id="savedGrid"></div>
+    </div>
+  </div>
+
+  <!-- Detail overlay + panel -->
+  <div class="detail-overlay" id="detailOverlay"></div>
+  <aside class="detail-panel" id="detailPanel" aria-label="Grant detail"></aside>
+
+  <footer class="footer">
+    <div class="footer-left">GrantRadar — 9 funders monitored · Refreshed daily at 6am UTC</div>
+    <div class="footer-right"><a href="https://www.perplexity.ai/computer" target="_blank" rel="noopener noreferrer">Created with Perplexity Computer</a></div>
+  </footer>
+</div>
+
+<script>
+// ── Grant Data ────────────────────────────────────────────────────────────────
+const GRANTS = [
+  // ── INNOVATE UK ───────────────────────────────────────────────────────────
+  { id:"iuk-01", funder:"Innovate UK", programme:"AI Champions", title:"AI Champions: Frontier AI Phase 1", amount:"Up to £3,000,000", amtVal:3000000, currency:"gbp", status:"open", deadline:"2026-04-29", eligibility:"SME", type:"Grant", trl:[1,4], sectors:["AI","Deep Tech"], location:"UK", desc:"UK registered SME businesses can apply for a share of up to £3 million to deliver feasibility studies for frontier artificial intelligence (AI) and machine learning (ML) technologies with a clear route to defensible scale-up.", url:"https://apply-for-innovation-funding.service.gov.uk/competition/2419/overview/bb8d7d28-0e63-4ee1-bf4a-790dfb3ae02f" },
+  { id:"iuk-02", funder:"Innovate UK", programme:"Clean Maritime Demo 7", title:"Clean Maritime Demo Competition 7: Pre-deployment Trials", amount:"Up to £121,000,000", amtVal:121000000, currency:"gbp", status:"open", deadline:"2026-07-15", eligibility:"Business + University", type:"Grant", trl:[6,8], sectors:["Clean Tech","Advanced Manufacturing"], location:"UK", desc:"UK registered organisations can apply for a share of up to £121 million across three strands for pre-deployment trials of clean maritime technologies.", url:"https://apply-for-innovation-funding.service.gov.uk/competition/2415/overview/fa34afe8-b2e7-4cda-b77b-cf952d26a27a" },
+  { id:"iuk-03", funder:"Innovate UK", programme:"Clean Maritime Demo 7", title:"Clean Maritime Demo Competition 7: Feasibility Studies", amount:"Up to £121,000,000", amtVal:121000000, currency:"gbp", status:"open", deadline:"2026-07-15", eligibility:"Business + University", type:"Grant", trl:[1,3], sectors:["Clean Tech","Advanced Manufacturing"], location:"UK", desc:"UK registered organisations can apply for a share of up to £121 million across three strands for feasibility studies of clean maritime technologies.", url:"https://apply-for-innovation-funding.service.gov.uk/competition/2416/overview/f49610a2-5e82-4898-b357-10f80154a2b8" },
+  { id:"iuk-04", funder:"Innovate UK", programme:"5G SNPN", title:"SNPN 5G Assured Integration (CR&D)", amount:"Up to £18,500,000", amtVal:18500000, currency:"gbp", status:"open", deadline:"2026-04-01", eligibility:"Business + University", type:"Grant", trl:[4,6], sectors:["Digital","AI","Deep Tech"], location:"UK", desc:"UK registered organisations can apply for a share of up to £18.5 million to integrate UK anchored and hardened mobile private network products and solutions.", url:"https://apply-for-innovation-funding.service.gov.uk/competition/2400/overview/cbbc48e2-d78e-42cd-b570-330f702ba82f" },
+  { id:"iuk-05", funder:"Innovate UK", programme:"Robotics", title:"Robotics Adoption Hubs", amount:"Up to £38,000,000", amtVal:38000000, currency:"gbp", status:"open", deadline:"2026-04-15", eligibility:"Business", type:"Grant", trl:[5,8], sectors:["Advanced Manufacturing","AI","Digital"], location:"UK", desc:"UK registered organisations can apply for a share of up to £38 million for creating one-stop shops that support the adoption of robotics and automation technologies across UK sectors.", url:"https://apply-for-innovation-funding.service.gov.uk/competition/2408/overview/ad7d7d36-af60-48be-91b0-f3208cf7c1d4" },
+  { id:"iuk-06", funder:"Innovate UK", programme:"Semiconductors", title:"Semiconductors & Components for Smart Electronic Platforms", amount:"Up to £18,500,000", amtVal:18500000, currency:"gbp", status:"open", deadline:"2026-04-01", eligibility:"SME + Business", type:"Grant", trl:[3,6], sectors:["Deep Tech","Advanced Manufacturing","Digital"], location:"UK", desc:"UK registered businesses can apply for a share of up to £18.5 million to develop semiconductors and electronic components for smart electronic platforms.", url:"https://apply-for-innovation-funding.service.gov.uk/competition/2403/overview/4b54c133-c9b2-4572-9cca-2a7a4f69e5b8" },
+  { id:"iuk-07", funder:"Innovate UK", programme:"KTP", title:"Knowledge Transfer Partnership (KTP): 2026–2027 Round 1", amount:"Up to £10,000,000", amtVal:10000000, currency:"gbp", status:"open", deadline:"2026-04-01", eligibility:"University + Business", type:"Grant", trl:[3,7], sectors:["Advanced Manufacturing","Digital","AI","Health"], location:"UK", desc:"UK registered academic institutions, RTOs or Catapults can apply for a share of up to £10 million to facilitate knowledge transfer partnerships with businesses.", url:"https://apply-for-innovation-funding.service.gov.uk/competition/search" },
+  { id:"iuk-08", funder:"Innovate UK", programme:"ADOPT", title:"ADOPT Facilitator Support Grant: Round 7", amount:"£2,500 per grant", amtVal:2500, currency:"gbp", status:"open", deadline:"2026-04-15", eligibility:"Agri Business", type:"Grant", trl:[2,5], sectors:["Agritech"], location:"England", desc:"Farming, growing or forestry businesses based in England can apply for a grant of £2,500 to engage an advisor to support their business with on-farm innovation.", url:"https://apply-for-innovation-funding.service.gov.uk/competition/2404/overview/99693fa4-0f17-4de8-b812-34f2be37a4d0" },
+  { id:"iuk-09", funder:"Innovate UK", programme:"Zero Emission Flight", title:"Zero Emission Flight Demonstrator Round 1", amount:"Min £8,000,000", amtVal:8000000, currency:"gbp", status:"open", deadline:"2026-04-01", eligibility:"Business (Collab)", type:"Grant", trl:[5,8], sectors:["Clean Tech","Advanced Manufacturing"], location:"UK", desc:"UK registered organisations can apply for a share of a minimum of £8 million for developing zero emission capable flight in the UK.", url:"https://apply-for-innovation-funding.service.gov.uk/competition/search" },
+  { id:"iuk-10", funder:"Innovate UK", programme:"Quantum", title:"UK-Germany Collaborative Innovation for Quantum Technologies 2026", amount:"Up to £3,000,000", amtVal:3000000, currency:"gbp", status:"open", deadline:"2026-04-15", eligibility:"Business (UK-DE Collab)", type:"Grant", trl:[3,6], sectors:["Deep Tech","Digital","AI"], location:"UK", desc:"UK registered organisations can apply for a share of up to £3 million for innovative projects in quantum technologies in collaboration with German partners.", url:"https://apply-for-innovation-funding.service.gov.uk/competition/search" },
+  { id:"iuk-11", funder:"Innovate UK", programme:"DRIVE35", title:"DRIVE35 Innovation Fund: Collaborate 2", amount:"Up to £33,000,000", amtVal:33000000, currency:"gbp", status:"open", deadline:"2026-03-18", eligibility:"SME + Business", type:"Grant", trl:[6,9], sectors:["Clean Tech","Advanced Manufacturing"], location:"UK", desc:"UK registered organisations can apply for a share of up to £33 million for late stage collaborative R&D projects for zero emission vehicles.", url:"https://apply-for-innovation-funding.service.gov.uk/competition/search" },
+  { id:"iuk-12", funder:"Innovate UK", programme:"DRIVE35", title:"DRIVE35 Scale-up Fund", amount:"Up to £150,000,000", amtVal:150000000, currency:"gbp", status:"open", deadline:"Rolling", eligibility:"Business", type:"Grant", trl:[7,9], sectors:["Clean Tech","Advanced Manufacturing"], location:"UK", desc:"UK registered organisations can apply for a share of up to £150 million to create scale-up manufacturing capability for zero emission vehicles.", url:"https://apply-for-innovation-funding.service.gov.uk/competition/search" },
+  { id:"iuk-13", funder:"Innovate UK", programme:"Commercialisation", title:"Commercialising Knowledge Assets Fund (CKAF) Spring", amount:"£50,000–£250,000", amtVal:250000, currency:"gbp", status:"open", deadline:"2026-05-07", eligibility:"Research Org", type:"Grant", trl:[3,6], sectors:["Deep Tech","Digital"], location:"UK", desc:"UK registered government research organisations can apply for grants from £50,000 up to £250,000 to commercialise knowledge assets and intellectual property.", url:"https://apply-for-innovation-funding.service.gov.uk/competition/search" },
+  { id:"iuk-14", funder:"Innovate UK", programme:"Healthcare Innovation", title:"Contracts for Innovation: Drug & Alcohol Addiction Healthcare", amount:"Up to £20,000,000", amtVal:20000000, currency:"gbp", status:"open", deadline:"2026-05-06", eligibility:"Any Organisation", type:"Contract", trl:[4,8], sectors:["Health","Digital"], location:"UK + International", desc:"Organisations can apply for a share of £20 million to advance development and commercialisation of innovations in drug and alcohol addiction healthcare.", url:"https://apply-for-innovation-funding.service.gov.uk/competition/search" },
+  { id:"iuk-15", funder:"Innovate UK", programme:"Energy Catalyst", title:"Energy Catalyst Round 11 – Early Stage", amount:"Up to £7,000,000", amtVal:7000000, currency:"gbp", status:"open", deadline:"2026-03-25", eligibility:"SME (Intl Collab)", type:"Grant", trl:[1,4], sectors:["Clean Tech","Energy"], location:"UK + International", desc:"Organisations can apply for a share of up to £7 million for early-stage energy innovations in ODA eligible countries (sub-Saharan Africa, South Asia, Indo Pacific).", url:"https://apply-for-innovation-funding.service.gov.uk/competition/search" },
+  { id:"iuk-16", funder:"Innovate UK", programme:"EV Charging", title:"Increasing EV Charging Capacity on Strategic Road Network", amount:"Up to £10,000,000", amtVal:10000000, currency:"gbp", status:"open", deadline:"2026-03-25", eligibility:"Business (Collab)", type:"Grant", trl:[5,8], sectors:["Clean Tech","Energy","Advanced Manufacturing"], location:"UK", desc:"UK registered organisations can apply for a share of up to £10 million for development and demonstration of EV charging solutions on the strategic road network.", url:"https://apply-for-innovation-funding.service.gov.uk/competition/search" },
+
+  // ── UKRI ──────────────────────────────────────────────────────────────────
+  { id:"ukri-01", funder:"UKRI", programme:"EPSRC", title:"EPSRC Prosperity Partnerships 2027", amount:"Up to £40,000,000", amtVal:40000000, currency:"gbp", status:"open", deadline:"2026-05-21", eligibility:"University + Business", type:"Partnership Grant", trl:[3,7], sectors:["Advanced Manufacturing","AI","Digital","Clean Tech"], location:"UK", desc:"Apply for funding to support ambitious, collaborative research programmes. Projects must be co-created and co-delivered by business and academic partners, aiming to create long-term prosperity for the UK.", url:"https://www.ukri.org/opportunity/epsrc-prosperity-partnerships-2027/" },
+  { id:"ukri-02", funder:"UKRI", programme:"EPSRC", title:"EPSRC Materials Innovation Partnerships", amount:"Up to £7,500,000", amtVal:7500000, currency:"gbp", status:"open", deadline:"2026-05-14", eligibility:"University + Business", type:"Partnership Grant", trl:[3,6], sectors:["Advanced Manufacturing","Deep Tech","Clean Tech"], location:"UK", desc:"Apply for funding to support ambitious, collaborative materials research programmes co-created and co-delivered by business and academic partners.", url:"https://www.ukri.org/opportunity/epsrc-materials-innovation-partnerships/" },
+  { id:"ukri-03", funder:"UKRI", programme:"EPSRC", title:"Fundamental AI Research Lab", amount:"Up to £40,000,000", amtVal:40000000, currency:"gbp", status:"open", deadline:"2026-03-31", eligibility:"University", type:"Grant", trl:[1,3], sectors:["AI","Digital","Deep Tech"], location:"UK", desc:"Apply to lead the formation of a strategic research lab dedicated to advancing the UK's position in fundamental AI research.", url:"https://www.ukri.org/opportunity/fundamental-ai-research-lab/" },
+  { id:"ukri-04", funder:"UKRI", programme:"MRC", title:"MRC New Investigator Research Grant", amount:"Varies (50% FEC)", amtVal:500000, currency:"gbp", status:"open", deadline:"Rolling", eligibility:"Researcher", type:"Research Grant", trl:[1,3], sectors:["Health","Biotech"], location:"UK + LMICs", desc:"Apply for funding to take the next step towards becoming an independent researcher. Research must be in the remit of the Medical Research Council. Funding usually lasts three years.", url:"https://www.ukri.org/opportunity/mrc-new-investigator-research-grant-applicant-led/" },
+  { id:"ukri-05", funder:"UKRI", programme:"MRC", title:"MRC Partnership Grant", amount:"Varies", amtVal:1000000, currency:"gbp", status:"open", deadline:"Rolling", eligibility:"Researcher + Organisation", type:"Research Grant", trl:[2,5], sectors:["Health","Biotech","AI"], location:"UK + LMICs", desc:"Apply for funding to support partnerships to carry out novel collaborative activities between research teams. Establish novel high-value collaborative activities or capabilities.", url:"https://www.ukri.org/opportunity/mrc-partnership-grant-applicant-led/" },
+  { id:"ukri-06", funder:"UKRI", programme:"UKRI Translation", title:"UKRI Translation: Proof of Concept", amount:"£100,000–£250,000", amtVal:250000, currency:"gbp", status:"open", deadline:"2026-05-13", eligibility:"UK Research Org", type:"Proof of Concept", trl:[3,6], sectors:["AI","Health","Deep Tech","Clean Tech","Advanced Manufacturing"], location:"UK", desc:"Apply for proof-of-concept funding to support early to mid-stage commercialisation of research in any discipline (AHRC, BBSRC, EPSRC, ESRC, MRC, NERC, STFC).", url:"https://www.ukri.org/opportunity/ukri-translation-proof-of-concept/" },
+  { id:"ukri-07", funder:"UKRI", programme:"Innovate UK", title:"Robotics Adoption Hubs (UKRI route)", amount:"Up to £38,000,000", amtVal:38000000, currency:"gbp", status:"open", deadline:"2026-04-15", eligibility:"Business + Research Org", type:"Grant", trl:[5,8], sectors:["Advanced Manufacturing","AI"], location:"UK", desc:"UK registered organisations can apply for a share of up to £38 million for creating one-stop shops that will help businesses adopt robotics and automation solutions.", url:"https://www.ukri.org/opportunity/robotics-adoption-hubs/" },
+  { id:"ukri-08", funder:"UKRI", programme:"ESRC", title:"UK National Coordinator: European Social Survey Rounds 13 & 14", amount:"£2,310,000", amtVal:2310000, currency:"gbp", status:"open", deadline:"2026-05-21", eligibility:"UK Research Org", type:"Research Grant", trl:[1,2], sectors:["Social Sciences","Digital"], location:"UK", desc:"Apply for funding to be the UK National Coordinator for the European Social Survey and deliver data collection for Rounds 13 and 14 (48 months from August 2026).", url:"https://www.ukri.org/opportunity/uk-national-coordinator-and-survey-data-collection-for-the-european-social-survey-round-13-and-14/" },
+  { id:"ukri-09", funder:"UKRI", programme:"NERC/EPSRC", title:"Sandpit: Market Access Acceleration in Consumer-Led Flexibility", amount:"£50,000–£350,000", amtVal:350000, currency:"gbp", status:"open", deadline:"2026-03-26", eligibility:"Multi-Council Eligible", type:"Sandpit", trl:[2,5], sectors:["Energy","Clean Tech","Digital"], location:"UK", desc:"Submit an expression of interest to attend this sandpit to co-design actionable prototypes for market access acceleration in consumer-led energy flexibility.", url:"https://www.ukri.org/opportunity/sandpit-market-access-acceleration-in-consumer-led-flexibility/" },
+  { id:"ukri-10", funder:"UKRI", programme:"MRC", title:"Pre-clinical Translational Models Hub", amount:"TBC", amtVal:5000000, currency:"gbp", status:"open", deadline:"2026-05-21", eligibility:"University (MRC eligible)", type:"Infrastructure Grant", trl:[2,4], sectors:["Health","Biotech","AI"], location:"UK", desc:"Apply for funding to establish a UK Hub for the development of pre-clinical translational human in vitro models. Must build on existing equipment, capability and expertise.", url:"https://www.ukri.org/opportunity/pre-clinical-translational-models-hub/" },
+  { id:"ukri-11", funder:"UKRI", programme:"NHS Challenge", title:"NHS Fit for the Future: Dementia Challenge", amount:"TBC", amtVal:2000000, currency:"gbp", status:"open", deadline:"2026-04-02", eligibility:"Business + Health Professional", type:"Expression of Interest", trl:[4,7], sectors:["Health","AI","Digital"], location:"UK", desc:"Submit an expression of interest if you have a clinical intervention or technological innovation that can shorten the time to diagnose dementia or enhance early detection.", url:"https://www.ukri.org/opportunity/nhs-fit-for-the-future-dementia-challenge/" },
+  { id:"ukri-12", funder:"UKRI", programme:"ESRC", title:"British Election Study 2027–2032", amount:"£4,900,000", amtVal:4900000, currency:"gbp", status:"open", deadline:"2026-05-14", eligibility:"UK Research Org (ESRC)", type:"Research Grant", trl:[1,2], sectors:["Social Sciences","Digital"], location:"UK", desc:"Apply for funding to run the British Election Study between 2027 and 2037 and the funding for the operation of the UK's core electoral data infrastructure.", url:"https://www.ukri.org/opportunity/british-election-study-2027-to-2032/" },
+
+  // ── SBRI / Contracts for Innovation ──────────────────────────────────────
+  { id:"sbri-01", funder:"SBRI", programme:"Contracts for Innovation", title:"Contracts for Innovation: Industrial Human Relevant Drug Models", amount:"Up to £2,000,000", amtVal:2000000, currency:"gbp", status:"open", deadline:"2026-04-15", eligibility:"Any Organisation", type:"Contract (SBRI)", trl:[3,7], sectors:["Health","Biotech","AI"], location:"UK + International", desc:"Organisations can apply for a share of £2 million to develop and commercialise new industrial human relevant drug models for preclinical testing (inclusive of VAT).", url:"https://apply-for-innovation-funding.service.gov.uk/competition/2396/overview/d55398bb-ff62-43b9-9ee1-bf3fa4b95c5c" },
+  { id:"sbri-02", funder:"SBRI", programme:"SBRI Healthcare", title:"SBRI Healthcare: Check the website for latest open calls", amount:"Phase 1: ~£100k; Phase 2: up to £1M", amtVal:1000000, currency:"gbp", status:"open", deadline:"Rolling", eligibility:"SME + Business", type:"Contract (SBRI)", trl:[3,6], sectors:["Health","AI","Digital"], location:"UK", desc:"SBRI Healthcare provides phased funding (Phase 1, 2, 3) for NHS-relevant healthcare innovations. Funded by NHS Accelerated Access Collaborative. Check website for open competitions.", url:"https://sbrihealthcare.co.uk/competitions/overview" },
+
+  // ── WELLCOME TRUST ────────────────────────────────────────────────────────
+  { id:"wt-01", funder:"Wellcome Trust", programme:"Discovery Research", title:"Wellcome Discovery Awards", amount:"Avg £3,500,000 (up to £5M+)", amtVal:3500000, currency:"gbp", status:"open", deadline:"2026-03-31", eligibility:"Established Researcher", type:"Research Award", trl:[1,3], sectors:["Health","Biotech"], location:"UK + Ireland + LMICs", desc:"Funding for established researchers and teams from any discipline who want to pursue bold and creative research ideas to deliver significant shifts in understanding related to human life, health and wellbeing. Awards up to 8 years.", url:"https://wellcome.org/research-funding/schemes/wellcome-discovery-awards" },
+  { id:"wt-02", funder:"Wellcome Trust", programme:"People & Training", title:"Wellcome Career Development Awards", amount:"Avg £3,500,000 (up to 8 years)", amtVal:3500000, currency:"gbp", status:"open", deadline:"2026-03-26", eligibility:"Mid-career Researcher", type:"Fellowship", trl:[1,3], sectors:["Health","Biotech","AI"], location:"UK + Ireland + LMICs", desc:"Funding for mid-career researchers who have the potential to be international research leaders. Awards can be up to 8 years. Rolling deadline — three times a year.", url:"https://wellcome.org/research-funding/schemes/wellcome-career-development-awards" },
+  { id:"wt-03", funder:"Wellcome Trust", programme:"Climate & Health", title:"Climate Impacts Awards: Making Health Effects of Climate Change Visible", amount:"Up to £2,500,000", amtVal:2500000, currency:"gbp", status:"open", deadline:"2026-04-08", eligibility:"Mid/Senior Researcher", type:"Research Award", trl:[1,3], sectors:["Health","Agritech","Clean Tech"], location:"Worldwide (excl. China)", desc:"Awards to make the impacts of climate change on physical and mental health visible to drive urgent climate policy action at scale. Up to 3 years.", url:"https://wellcome.org/research-funding/schemes/climate-impacts-awards-unlocking-urgent-climate-action-making-health-2" },
+  { id:"wt-04", funder:"Wellcome Trust", programme:"People & Training", title:"Wellcome Early-Career Awards", amount:"Salary + up to £400,000", amtVal:400000, currency:"gbp", status:"open", deadline:"2026-07-22", eligibility:"Early-career Researcher", type:"Fellowship", trl:[1,2], sectors:["Health","Biotech","AI"], location:"UK + Ireland + LMICs", desc:"Funding for early-career researchers from any discipline who are ready to develop their research identity. Through innovative projects, they will deliver shifts in understanding in human life and health. Usually 5 years.", url:"https://wellcome.org/research-funding/schemes/wellcome-early-career-awards" },
+  { id:"wt-05", funder:"Wellcome Trust", programme:"Genomics", title:"Genomics in Context Awards", amount:"Up to £500,000", amtVal:500000, currency:"gbp", status:"open", deadline:"2026-03-16", eligibility:"Researcher (Any Career Stage)", type:"Research Award", trl:[1,2], sectors:["Health","Biotech","Social Sciences"], location:"Worldwide (excl. China)", desc:"Awards supporting transdisciplinary teams to create new research agendas at the intersection of genomics, humanities, social sciences and bioethics.", url:"https://wellcome.org/research-funding/schemes/genomics-in-context-awards" },
+  { id:"wt-06", funder:"Wellcome Trust", programme:"Infrastructure", title:"Evidence Synthesis Infrastructure Hubs in LMICs", amount:"£1,500,000–£1,900,000", amtVal:1900000, currency:"gbp", status:"open", deadline:"2026-05-07", eligibility:"Researcher (LMIC institution)", type:"Infrastructure Grant", trl:[2,4], sectors:["Health","AI","Digital"], location:"LMICs", desc:"Wellcome will fund five new global infrastructure hubs to catalyse AI-enabled evidence synthesis to address policy-scale challenges. 3–5 years.", url:"https://wellcome.org/research-funding/schemes/establishing-infrastructure-hubs-power-evidence-synthesis" },
+  { id:"wt-07", funder:"Wellcome Trust", programme:"Infectious Disease", title:"Infectious Disease Clinical Trial Award: Optimising Interventions", amount:"£1,000,000–£8,000,000", amtVal:8000000, currency:"gbp", status:"open", deadline:"2026-06-02", eligibility:"Researcher (Africa, South Asia, SE Asia)", type:"Clinical Trial Award", trl:[4,7], sectors:["Health","Biotech"], location:"LMICs", desc:"Funding for transdisciplinary teams led from Africa, South Asia or South-East Asia to conduct clinical trials that optimise licensed pharmaceutical interventions for infectious diseases. 3–5 years.", url:"https://wellcome.org/research-funding/schemes/infectious-disease-clinical-trial-award-optimising-interventions-impact" },
+  { id:"wt-08", funder:"Wellcome Trust", programme:"Mental Health", title:"Mental Health Award: Physical Activity & Circadian Interventions for Youth", amount:"£1,000,000–£4,000,000", amtVal:4000000, currency:"gbp", status:"upcoming", deadline:"2026-07-01", eligibility:"Established Researcher", type:"Research Award", trl:[3,6], sectors:["Health"], location:"Worldwide (excl. China)", desc:"Funding for interventions that improve youth mental health by targeting circadian rhythm disruption and physical inactivity. Duration: 3–4 years.", url:"https://wellcome.org/research-funding/schemes/mental-health-award-using-physical-activity-and-circadian-based" },
+
+  // ── EIC ───────────────────────────────────────────────────────────────────
+  { id:"eic-01", funder:"EIC Europe", programme:"EIC Pathfinder", title:"EIC Pathfinder Open 2026", amount:"Up to €4,000,000", amtVal:4700000, currency:"eur", status:"open", deadline:"2026-05-12", eligibility:"Consortium (3+ entities, EU/Associated)", type:"Research & Innovation Grant", trl:[1,4], sectors:["Deep Tech","AI","Biotech","Clean Tech"], location:"EU + Associated", desc:"Funding for breakthrough deep tech projects with high scientific and technological ambition from laboratory to prototype (TRL 1–4). Open to any field of science, technology or application.", url:"https://eic.ec.europa.eu/eic-funding-opportunities/eic-pathfinder/eic-pathfinder-open-0_en" },
+  { id:"eic-02", funder:"EIC Europe", programme:"EIC Pathfinder", title:"EIC Pathfinder Challenges 2026", amount:"Up to €4,000,000", amtVal:4700000, currency:"eur", status:"open", deadline:"2026-10-28", eligibility:"Consortium or Single Entity (EU/Associated)", type:"Research & Innovation Grant", trl:[1,4], sectors:["Deep Tech","AI","Health","Clean Tech"], location:"EU + Associated", desc:"Funding for breakthrough research projects matching predefined thematic areas. Supports early-stage development of future technologies (TRL 1–4).", url:"https://eic.ec.europa.eu/eic-funding-opportunities/eic-pathfinder/eic-pathfinder-challenges-2026_en" },
+  { id:"eic-03", funder:"EIC Europe", programme:"EIC Transition", title:"EIC Transition Open 2026", amount:"Up to €2,500,000", amtVal:2940000, currency:"eur", status:"open", deadline:"2026-09-16", eligibility:"SME / Research Org (EU/Associated)", type:"Market-readiness Grant", trl:[4,6], sectors:["Deep Tech","AI","Clean Tech","Advanced Manufacturing"], location:"EU + Associated", desc:"Grants to mature and validate novel technology towards TRL 6 and improve market readiness. Must build on results from eligible EU-funded projects at minimum TRL 3.", url:"https://eic.ec.europa.eu/eic-funding-opportunities/eic-transition_en" },
+  { id:"eic-04", funder:"EIC Europe", programme:"EIC Accelerator", title:"EIC Accelerator Open 2026 — May Cut-off", amount:"Grant ≤€2.5M + Equity €1–10M", amtVal:12500000, currency:"eur", status:"open", deadline:"2026-05-06", eligibility:"SME / Start-up (EU/Associated)", type:"Grants + Equity", trl:[6,8], sectors:["Deep Tech","AI","Clean Tech","Health","Advanced Manufacturing"], location:"EU + Associated", desc:"Support for commercialisation and scale-up of innovations with potential to create or disrupt markets (TRL 6–8). Grant component up to €2.5M, equity €1–10M or blended finance.", url:"https://eic.ec.europa.eu/eic-funding-opportunities/eic-accelerator_en" },
+  { id:"eic-05", funder:"EIC Europe", programme:"EIC Accelerator", title:"EIC Accelerator Open 2026 — July Cut-off", amount:"Grant ≤€2.5M + Equity €1–10M", amtVal:12500000, currency:"eur", status:"upcoming", deadline:"2026-07-08", eligibility:"SME / Start-up (EU/Associated)", type:"Grants + Equity", trl:[6,8], sectors:["Deep Tech","AI","Clean Tech","Health","Advanced Manufacturing"], location:"EU + Associated", desc:"Next cut-off for the EIC Accelerator. Support for commercialisation and scale-up of deep tech innovations. Grant up to €2.5M plus equity investment €1–10M.", url:"https://eic.ec.europa.eu/eic-funding-opportunities/eic-accelerator_en" },
+  { id:"eic-06", funder:"EIC Europe", programme:"EIC STEP Scale Up", title:"EIC STEP Scale Up 2026", amount:"€10–30 million (equity)", amtVal:35000000, currency:"eur", status:"open", deadline:"2026-05-06", eligibility:"SME / Small Mid-cap (EU/Associated)", type:"Equity Investment", trl:[8,9], sectors:["Deep Tech","AI","Clean Tech","Biotech","Digital"], location:"EU + Associated", desc:"Major equity investments to catalyse funding rounds of €50M+ for scaling breakthrough innovations in strategic technologies (digital, deep tech, clean tech, biotech).", url:"https://eic.ec.europa.eu/eic-funding-opportunities/step-scale_en" },
+
+  // ── HORIZON EUROPE ────────────────────────────────────────────────────────
+  { id:"he-01", funder:"Horizon Europe", programme:"Research Infrastructures", title:"R&D for Next-Generation Scientific Instrumentation & Digitalisation", amount:"€5,000,000–€10,000,000", amtVal:10000000, currency:"eur", status:"open", deadline:"2026-06-16", eligibility:"Research Org (EU + Associated)", type:"RIA", trl:[3,6], sectors:["Digital","AI","Deep Tech"], location:"EU + UK + Associated", desc:"Development of next generation scientific instrumentation, tools, methods and digitalisation solutions for research infrastructures.", url:"https://ec.europa.eu/info/funding-tenders/opportunities/portal/screen/opportunities/topic-details/HORIZON-INFRA-2026-TECH-01-01" },
+  { id:"he-02", funder:"Horizon Europe", programme:"EOSC / Open Science", title:"Uptake of FAIR Data Management & EOSC by Research Communities", amount:"~€40,000,000", amtVal:40000000, currency:"eur", status:"open", deadline:"2026-06-16", eligibility:"Research Org / University (EU + Associated)", type:"RIA", trl:[2,5], sectors:["Digital","AI","Social Sciences"], location:"EU + UK + Associated", desc:"Supporting the uptake of FAIR data management practices and European Open Science Cloud by research communities and research infrastructures across Europe.", url:"https://ec.europa.eu/info/funding-tenders/opportunities/portal/screen/opportunities/topic-details/HORIZON-INFRA-2026-01-EOSC-01" },
+  { id:"he-03", funder:"Horizon Europe", programme:"Neuroscience / Digital", title:"Digital Services for Neuroscience Research and Brain-Inspired Technology", amount:"~€32,000,000", amtVal:32000000, currency:"eur", status:"open", deadline:"2026-06-15", eligibility:"Research Org / University (EU + Associated)", type:"RIA", trl:[3,6], sectors:["Health","AI","Digital","Deep Tech"], location:"EU + UK + Associated", desc:"Implementing digital services to empower neuroscience research for health and brain-inspired technology via European research infrastructures.", url:"https://ec.europa.eu/info/funding-tenders/opportunities/portal/screen/opportunities/topic-details/HORIZON-INFRA-2026-SERV-01-01" },
+  { id:"he-04", funder:"Horizon Europe", programme:"Digital Twins / Climate", title:"Digital Twins for Environment, Climate and Security", amount:"€5,000,000–€7,500,000", amtVal:7500000, currency:"eur", status:"open", deadline:"2026-06-16", eligibility:"Research Org / Business (EU + Associated)", type:"RIA", trl:[4,7], sectors:["Clean Tech","Digital","AI","Deep Tech"], location:"EU + UK + Associated", desc:"Development of digital twins and major components for applications in environment, climate monitoring and security, advancing simulation and modelling capabilities.", url:"https://ec.europa.eu/info/funding-tenders/opportunities/portal/screen/opportunities/topic-details/HORIZON-INFRA-2026-TECH-01-02" },
+  { id:"he-05", funder:"Horizon Europe", programme:"Research Infrastructure", title:"Consolidation of Research Infrastructure Landscape: Individual Support", amount:"€3,000,000–€4,500,000", amtVal:4500000, currency:"eur", status:"open", deadline:"2026-06-16", eligibility:"Research Infrastructure (EU + Associated)", type:"RIA", trl:[3,6], sectors:["Digital","Advanced Manufacturing","Deep Tech"], location:"EU + UK + Associated", desc:"Individual support for research infrastructure evolution, long-term sustainability planning, and enhancement of service provision to research communities.", url:"https://ec.europa.eu/info/funding-tenders/opportunities/portal/screen/opportunities/topic-details/HORIZON-INFRA-2026-DEV-01-03" },
+  { id:"he-06", funder:"Horizon Europe", programme:"Research Infrastructure", title:"Risk Management for ESFRI/ERIC World-Class Research Infrastructures", amount:"€1,000,000–€4,000,000", amtVal:4000000, currency:"eur", status:"open", deadline:"2026-06-16", eligibility:"Research Infrastructure (EU + Associated)", type:"RIA", trl:[2,5], sectors:["Digital","Deep Tech"], location:"EU + UK + Associated", desc:"Targets pan-European research infrastructures to develop robust risk management plans and contingency plans for capacities at risk.", url:"https://ec.europa.eu/info/funding-tenders/opportunities/portal/screen/opportunities/topic-details/HORIZON-INFRA-2026-DEV-01-07" },
+  { id:"he-07", funder:"Horizon Europe", programme:"Ukraine Integration", title:"Research Infrastructures as Accelerators of Ukraine's Integration in ERA", amount:"~€8,000,000", amtVal:8000000, currency:"eur", status:"open", deadline:"2026-06-16", eligibility:"EU + Ukraine Research Orgs", type:"RIA", trl:[2,5], sectors:["Digital","Deep Tech","Social Sciences"], location:"EU + Ukraine + Associated", desc:"Using research infrastructures to accelerate Ukraine's integration into the European Research Area, promoting collaboration and access to European research facilities.", url:"https://ec.europa.eu/info/funding-tenders/opportunities/portal/screen/opportunities/topic-details/HORIZON-INFRA-2026-DEV-01-05" },
+  { id:"he-08", funder:"Horizon Europe", programme:"EOSC / Data", title:"Trusted Frameworks for Secure Data Sharing in EOSC", amount:"€3,000,000–€5,000,000", amtVal:5000000, currency:"eur", status:"open", deadline:"2026-06-16", eligibility:"Data Infrastructure / Research Org", type:"CSA", trl:[3,6], sectors:["Digital","AI","Deep Tech"], location:"EU + UK + Associated", desc:"Developing trusted frameworks for secure and efficient data sharing in the European Open Science Cloud, ensuring data protection and interoperability.", url:"https://ec.europa.eu/info/funding-tenders/opportunities/portal/screen/opportunities/topic-details/HORIZON-INFRA-2026-01-EOSC-02" },
+
+  // ── EIT ───────────────────────────────────────────────────────────────────
+  { id:"eit-01", funder:"EIT Europe", programme:"EIT Health", title:"EIT Health Innovation Validation Call 2026", amount:"Up to €850,000 (50% co-fund)", amtVal:850000, currency:"eur", status:"open", deadline:"2026-05-06", eligibility:"Consortium (Industry + Research, 2+ countries)", type:"Innovation Grant", trl:[6,7], sectors:["Health","AI","Digital"], location:"EU + Associated", desc:"EIT Health funding to accelerate clinical validation, regulatory approval and market launch for late-stage digital, data and AI-driven healthcare innovations at IML 6.", url:"https://eithealth.eu/opportunity/innovation-validation/" },
+  { id:"eit-02", funder:"EIT Europe", programme:"EIT Food", title:"EIT Food Accelerator Network (FAN) 2026", amount:"Business support + cash", amtVal:100000, currency:"eur", status:"open", deadline:"2026-04-08", eligibility:"Agrifood / Foodtech Start-up", type:"Accelerator", trl:[5,8], sectors:["Agritech","Biotech","Digital"], location:"EU + Associated", desc:"Support for high-potential agrifood and foodtech startups through 6 specialised hubs across Europe, each focused on key themes shaping the future of food systems.", url:"https://www.eitfood.eu/open-calls/eit-food-accelerator-network-fan-call-for-startups-2026" },
+  { id:"eit-03", funder:"EIT Europe", programme:"EIT Urban Mobility", title:"EIT Urban Mobility: Financial Support to Startups Open Call 2026", amount:"Up to €2,500,000", amtVal:2500000, currency:"eur", status:"open", deadline:"2026-05-18", eligibility:"Start-up (pre-seed to Series A, MVP required)", type:"Equity Investment", trl:[5,8], sectors:["Mobility","Clean Tech","AI","Digital"], location:"EU + Associated", desc:"EIT Urban Mobility financial support for startups developing breakthrough mobility solutions. Focus on urban logistics, shared mobility, public transport, mobility data, electrification.", url:"https://www.eit.europa.eu/our-activities/opportunities/financial-support-startups-open-call-2026" },
+  { id:"eit-04", funder:"EIT Europe", programme:"EIT InnoEnergy", title:"EIT InnoEnergy Open Call for Sustainable Energy Startups", amount:"Equity investment (varies)", amtVal:500000, currency:"eur", status:"open", deadline:"Rolling", eligibility:"Start-up (EU/Associated, proof of concept)", type:"Business Support + Equity", trl:[4,8], sectors:["Energy","Clean Tech","Advanced Manufacturing","Digital"], location:"EU + Associated", desc:"Rolling call for startups with scalable business models in sustainable energy: transport/mobility, energy storage, renewables, smart buildings, energy efficiency, circular economy.", url:"https://innoenergy.com/startups/" },
+  { id:"eit-05", funder:"EIT Europe", programme:"EIT Health", title:"EIT Health: New Models to Deliver Healthcare 2026", amount:"TBC", amtVal:500000, currency:"eur", status:"open", deadline:"2026-05-06", eligibility:"Healthcare Org (market-ready solutions)", type:"Scale-up Support", trl:[8,9], sectors:["Health","Digital","AI"], location:"EU + Associated", desc:"EIT Health funding for market-ready health solutions (IML 8–9) to drive real-world adoption and scale value-based healthcare models across health systems.", url:"https://www.eit.europa.eu/our-activities/opportunities/new-models-deliver-healthcare-2026" },
+  { id:"eit-06", funder:"EIT Europe", programme:"EIT Urban Mobility", title:"EIT Urban Mobility: Strategic Innovation Open Call", amount:"TBC", amtVal:300000, currency:"eur", status:"open", deadline:"2026-06-18", eligibility:"Organisation (urban mobility focus)", type:"Innovation Grant", trl:[4,7], sectors:["Mobility","Clean Tech","Digital","AI"], location:"EU + Associated", desc:"EIT Urban Mobility strategic innovation call for breakthrough mobility solutions. Focuses on systemic urban mobility challenges across European cities.", url:"https://www.eit.europa.eu/our-activities/opportunities/strategic-innovation-open-call" },
+
+  // ── EUREKA ────────────────────────────────────────────────────────────────
+  { id:"eureka-01", funder:"Eureka", programme:"Eurostars", title:"Eurostars Call 10 for Projects", amount:"Varies by country (Horizon co-funded)", amtVal:500000, currency:"gbp", status:"open", deadline:"2026-03-19", eligibility:"SME-led Consortium (2+ Eurostars countries)", type:"R&D Grant", trl:[3,7], sectors:["AI","Digital","Clean Tech","Health","Advanced Manufacturing"], location:"UK + EU + 40 countries", desc:"Eurostars supports innovative SMEs and partners to develop products, processes or services that can be easily commercialised. Co-funded by EU Horizon Europe. Part of European Partnership on Innovative SMEs.", url:"https://www.eurekanetwork.org/programmes-and-calls/eurostars/eurostars-march-2026/" },
+  { id:"eureka-02", funder:"Eureka", programme:"CELTIC-NEXT", title:"CELTIC-NEXT Cluster: Spring 2026 Call", amount:"Varies by national funder", amtVal:300000, currency:"gbp", status:"open", deadline:"2026-04-24", eligibility:"Industry + SME + University (2+ Eureka countries)", type:"Cluster R&D Grant", trl:[3,7], sectors:["Digital","AI","Deep Tech"], location:"UK + EU + 18 countries", desc:"CELTIC-NEXT invites R&D proposals within ICT and telecommunications. Projects must represent international cooperation and be directed at researching or developing an innovative product, process or service.", url:"https://www.eurekanetwork.org/programmes-and-calls/eureka-clusters/clusters-celtic-next-spring-2026/" },
+  { id:"eureka-03", funder:"Eureka", programme:"EUROGIA2030", title:"EUROGIA2030 — Call 30 (Low-Carbon Energy)", amount:"Varies by national funder", amtVal:400000, currency:"gbp", status:"open", deadline:"2026-04-30", eligibility:"Industry + SME + University (2+ Eureka countries)", type:"Cluster R&D Grant", trl:[3,7], sectors:["Energy","Clean Tech","Advanced Manufacturing"], location:"UK + EU + Eureka countries", desc:"EUROGIA2030 focuses on low-carbon energy technologies and innovation. Projects must involve international cooperation in researching or developing innovative products, processes or services.", url:"https://www.eurekanetwork.org/programmes-and-calls/eureka-clusters/eurogia2030-call-30/" },
+  { id:"eureka-04", funder:"Eureka", programme:"Network Projects", title:"Eureka Network Projects — Open Call (Rolling)", amount:"Varies by country and scope", amtVal:300000, currency:"gbp", status:"open", deadline:"Rolling", eligibility:"Organisations from Eureka member countries", type:"Network R&D Grant", trl:[2,7], sectors:["AI","Digital","Clean Tech","Advanced Manufacturing","Health","Agritech"], location:"UK + EU + Eureka countries", desc:"Network Projects offer flexible funding for international collaborative R&D projects. Rolling call allowing applications to be submitted continuously. Flexible consortium requirements.", url:"https://www.eurekanetwork.org/programmes-and-calls/network-projects/network-projects-open-call/" },
+
+  // ── ERC ───────────────────────────────────────────────────────────────────
+  { id:"erc-01", funder:"ERC", programme:"ERC", title:"ERC Starting Grant 2026", amount:"Up to €1,500,000 (5 years)", amtVal:1765000, currency:"eur", status:"upcoming", deadline:"2026-10-01", eligibility:"Early-career Researcher (2–7 yrs post-PhD)", type:"ERC Grant", trl:[1,3], sectors:["Deep Tech","AI","Health","Biotech","Clean Tech"], location:"EU + Associated (host institution)", desc:"For talented early-career scientists who have already produced excellent supervised work, are ready to work independently, and show potential to be research leaders. Host institution must be in EU/Associated country.", url:"https://erc.europa.eu/apply-grant/starting-grants" },
+  { id:"erc-02", funder:"ERC", programme:"ERC", title:"ERC Consolidator Grant 2026", amount:"Up to €2,000,000 (5 years)", amtVal:2350000, currency:"eur", status:"upcoming", deadline:"2026-10-15", eligibility:"Researcher (7–12 yrs post-PhD)", type:"ERC Grant", trl:[1,3], sectors:["Deep Tech","AI","Health","Biotech","Clean Tech"], location:"EU + Associated (host institution)", desc:"For excellent researchers who want to consolidate their own independent research team or programme. Supports researchers establishing themselves as independent and wanting to consolidate their independence.", url:"https://erc.europa.eu/apply-grant/consolidator-grants" },
+  { id:"erc-03", funder:"ERC", programme:"ERC", title:"ERC Advanced Grant 2026", amount:"Up to €2,500,000 (5 years)", amtVal:2940000, currency:"eur", status:"open", deadline:"2026-05-29", eligibility:"Established Research Leader (last 10 yrs)", type:"ERC Grant", trl:[1,3], sectors:["Deep Tech","AI","Health","Biotech","Clean Tech","Digital"], location:"EU + Associated (host institution)", desc:"For established, leading principal investigators who want to pursue ground-breaking, high-risk research. Supports exceptional researchers with track record of significant achievements.", url:"https://erc.europa.eu/apply-grant/advanced-grants" },
+  { id:"erc-04", funder:"ERC", programme:"ERC", title:"ERC Synergy Grant 2026", amount:"Up to €10,000,000 (6 years)", amtVal:11760000, currency:"eur", status:"upcoming", deadline:"2026-11-05", eligibility:"Groups of 2–4 PIs (EU/Associated host)", type:"ERC Grant", trl:[1,3], sectors:["Deep Tech","AI","Health","Biotech","Clean Tech","Digital"], location:"EU + Associated (host institution)", desc:"For groups of 2–4 principal investigators who bring together complementary skills, knowledge and resources to jointly address ambitious research problems at the frontiers of knowledge.", url:"https://erc.europa.eu/apply-grant/synergy-grants" },
+  { id:"erc-05", funder:"ERC", programme:"ERC", title:"ERC Proof of Concept — Open Continuous Call", amount:"Up to €150,000 (18 months)", amtVal:176000, currency:"eur", status:"open", deadline:"Rolling", eligibility:"Current ERC Grant Holders Only", type:"Proof of Concept", trl:[3,6], sectors:["Deep Tech","AI","Health","Biotech","Clean Tech","Digital","Advanced Manufacturing"], location:"EU + Associated", desc:"For ERC grant holders to explore the innovation potential of their ERC-funded research and bring their ideas closer to market application. Supports verification of innovation potential and IP establishment.", url:"https://erc.europa.eu/apply-grant/proof-concept" }
+];
+
+// ── Helpers ────────────────────────────────────────────────────────────────
+const esc = s => s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+
+function daysUntil(deadline) {
+  if (!deadline || deadline === 'Rolling') return null;
+  const d = new Date(deadline); const now = new Date();
+  now.setHours(0,0,0,0); d.setHours(0,0,0,0);
+  return Math.round((d - now) / 86400000);
+}
+
+function fmtDeadline(deadline) {
+  if (!deadline || deadline === 'Rolling') return { label:'Rolling', cls:'deadline-rolling' };
+  const d = daysUntil(deadline);
+  const date = new Date(deadline);
+  const label = d < 0 ? 'Closed' : d === 0 ? 'Today' : d === 1 ? '1d left' : d <= 30 ? `${d}d left` :
+    date.toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'2-digit'});
+  const cls = d < 0 ? 'deadline-urgent' : d <= 14 ? 'deadline-urgent' : d <= 30 ? 'deadline-soon' : 'deadline-ok';
+  return { label, cls };
+}
+
+function funderClass(f) {
+  return {
+    'Innovate UK':'funder-iuk','UKRI':'funder-ukri','SBRI':'funder-sbri',
+    'Wellcome Trust':'funder-wellcome','EIC Europe':'funder-eic',
+    'Horizon Europe':'funder-horizon','EIT Europe':'funder-eit',
+    'Eureka':'funder-eureka','ERC':'funder-erc'
+  }[f] || 'funder-iuk';
+}
+
+function sectorClass(s) {
+  if (/\bai\b/i.test(s)) return 's-ai';
+  if (/clean|circular|sustainab|environ|maritime|emission|ev\b|electric/i.test(s)) return 's-clean';
+  if (/deep tech|quantum|semi|photon|crypto|nano/i.test(s)) return 's-deep';
+  if (/health|bio|med|pharma|clinical|genomic|mental/i.test(s)) return 's-health';
+  if (/manufactur|robot|automat|material|aerospace|aviation|automotive/i.test(s)) return 's-mfg';
+  if (/energy|battery|power|fuel|solar|wind|grid|EV/i.test(s)) return 's-energy';
+  if (/agri|food|farm|crop|livestock/i.test(s)) return 's-agri';
+  if (/biotech|genomic|synthetic bio/i.test(s)) return 's-bio';
+  if (/digital|data|software|cloud|cyber|iot|telecom|5g/i.test(s)) return 's-digital';
+  if (/space|satellite|astro/i.test(s)) return 's-space';
+  if (/social|soci|policy|humani|arts/i.test(s)) return 's-social';
+  if (/mobil|transport|transit|urban/i.test(s)) return 's-mobility';
+  return 's-default';
+}
+
+// ── State ─────────────────────────────────────────────────────────────────
+let activeFilters = { funder:[], status:[], sector:[], type:[], eligibility:[], location:[] };
+let searchQuery = '';
+let sortMode = 'deadline';
+let savedIds = new Set();
+let viewMode = 'main'; // 'main' | 'saved'
+
+// ── Filter definitions ─────────────────────────────────────────────────────
+const FUNDERS = ['Innovate UK','UKRI','SBRI','Wellcome Trust','EIC Europe','Horizon Europe','EIT Europe','Eureka','ERC'];
+const STATUSES = ['Open','Upcoming','Closed'];
+const SECTORS = ['AI','Advanced Manufacturing','Agritech','Biotech','Clean Tech','Deep Tech','Digital','Energy','Health','Mobility','Social Sciences'];
+const TYPES = ['Grant','Research Grant','Partnership Grant','Fellowship','Contract (SBRI)','Proof of Concept','Equity Investment','Accelerator','Clinical Trial Award','ERC Grant'];
+const ELIGIBILITIES = ['SME','Start-up','Business','University','Researcher','Early-career Researcher','Mid-career Researcher','Established Researcher','Any Organisation'];
+const LOCATIONS = ['UK','EU + Associated','UK + EU + Associated','LMICs','UK + International'];
+
+function normalise(loc) {
+  if (!loc) return '';
+  const l = loc.toLowerCase();
+  if (l.includes('uk') && (l.includes('eu') || l.includes('associated'))) return 'UK + EU + Associated';
+  if (l.includes('uk') && l.includes('international')) return 'UK + International';
+  if ((l.includes('eu') || l.includes('associated')) && !l.includes('uk')) return 'EU + Associated';
+  if (l.includes('lmic') || l.includes('low-') || l.includes('africa') || l.includes('asia')) return 'LMICs';
+  if (l.includes('uk') && !l.includes('eu')) return 'UK';
+  return loc;
+}
+
+function normElig(e) {
+  if (!e) return '';
+  const l = e.toLowerCase();
+  if (l.includes('early-career') || l.includes('early career')) return 'Early-career Researcher';
+  if (l.includes('mid-career') || l.includes('mid career')) return 'Mid-career Researcher';
+  if (l.includes('established researcher') || l.includes('senior')) return 'Established Researcher';
+  if (l.includes('researcher') && !l.includes('org')) return 'Researcher';
+  if (l.includes('start-up') || l.includes('startup')) return 'Start-up';
+  if (l.includes('sme')) return 'SME';
+  if (l.includes('university') || l.includes('academic')) return 'University';
+  if (l.includes('any')) return 'Any Organisation';
+  if (l.includes('business') || l.includes('company')) return 'Business';
+  return e;
+}
+
+function normType(t) {
+  if (!t) return 'Grant';
+  const l = t.toLowerCase();
+  if (l.includes('sbri') || l.includes('contract')) return 'Contract (SBRI)';
+  if (l.includes('erc')) return 'ERC Grant';
+  if (l.includes('fellowship')) return 'Fellowship';
+  if (l.includes('partnership')) return 'Partnership Grant';
+  if (l.includes('research grant') || l.includes('research award') || l.includes('award')) return 'Research Grant';
+  if (l.includes('proof of concept')) return 'Proof of Concept';
+  if (l.includes('equity')) return 'Equity Investment';
+  if (l.includes('accelerator')) return 'Accelerator';
+  if (l.includes('clinical trial')) return 'Clinical Trial Award';
+  return 'Grant';
+}
+
+// ── Filtering ──────────────────────────────────────────────────────────────
+function filterGrants(grants) {
+  return grants.filter(g => {
+    if (searchQuery) {
+      const q = searchQuery.toLowerCase();
+      if (![g.title,g.funder,g.programme||'',g.desc,g.sectors.join(' '),g.eligibility,g.location||''].join(' ').toLowerCase().includes(q)) return false;
+    }
+    if (activeFilters.funder.length && !activeFilters.funder.includes(g.funder)) return false;
+    if (activeFilters.status.length && !activeFilters.status.includes(g.status.charAt(0).toUpperCase()+g.status.slice(1))) return false;
+    if (activeFilters.sector.length && !activeFilters.sector.some(s => g.sectors.includes(s))) return false;
+    if (activeFilters.type.length && !activeFilters.type.includes(normType(g.type))) return false;
+    if (activeFilters.eligibility.length && !activeFilters.eligibility.some(e => normElig(g.eligibility).includes(e) || g.eligibility.toLowerCase().includes(e.toLowerCase()))) return false;
+    if (activeFilters.location.length && !activeFilters.location.some(l => normalise(g.location) === l)) return false;
+    return true;
+  });
+}
+
+function sortGrants(grants) {
+  return [...grants].sort((a,b) => {
+    if (sortMode === 'deadline') {
+      const da = a.deadline === 'Rolling' ? 9999 : (daysUntil(a.deadline) ?? 9999);
+      const db = b.deadline === 'Rolling' ? 9999 : (daysUntil(b.deadline) ?? 9999);
+      return da - db;
+    }
+    if (sortMode === 'amount') return (b.amtVal||0) - (a.amtVal||0);
+    if (sortMode === 'funder') return a.funder.localeCompare(b.funder);
+    if (sortMode === 'newest') return GRANTS.indexOf(b) - GRANTS.indexOf(a);
+    return 0;
+  });
+}
+
+// ── Count helpers ──────────────────────────────────────────────────────────
+function countFor(key, value, currentGrants) {
+  // Count across the current filter state, ignoring the filter for this key
+  const tempFilters = {...activeFilters, [key]: []};
+  const q = searchQuery;
+  return GRANTS.filter(g => {
+    if (q) {
+      const ql = q.toLowerCase();
+      if (![g.title,g.funder,g.programme||'',g.desc,g.sectors.join(' '),g.eligibility,g.location||''].join(' ').toLowerCase().includes(ql)) return false;
+    }
+    if (key !== 'funder' && tempFilters.funder.length && !tempFilters.funder.includes(g.funder)) return false;
+    if (key !== 'status' && tempFilters.status.length && !tempFilters.status.includes(g.status.charAt(0).toUpperCase()+g.status.slice(1))) return false;
+    if (key !== 'sector' && tempFilters.sector.length && !tempFilters.sector.some(s => g.sectors.includes(s))) return false;
+    if (key !== 'type' && tempFilters.type.length && !tempFilters.type.includes(normType(g.type))) return false;
+    if (key !== 'eligibility' && tempFilters.eligibility.length && !tempFilters.eligibility.some(e => normElig(g.eligibility).includes(e) || g.eligibility.toLowerCase().includes(e.toLowerCase()))) return false;
+    if (key !== 'location' && tempFilters.location.length && !tempFilters.location.some(l => normalise(g.location) === l)) return false;
+    // match this specific value
+    if (key === 'funder') return g.funder === value;
+    if (key === 'status') return (g.status.charAt(0).toUpperCase()+g.status.slice(1)) === value;
+    if (key === 'sector') return g.sectors.includes(value);
+    if (key === 'type') return normType(g.type) === value;
+    if (key === 'eligibility') return normElig(g.eligibility).includes(value) || g.eligibility.toLowerCase().includes(value.toLowerCase());
+    if (key === 'location') return normalise(g.location) === value;
+    return true;
+  }).length;
+}
+
+// ── Render functions ───────────────────────────────────────────────────────
+function renderStats() {
+  const total = GRANTS.length;
+  const open = GRANTS.filter(g=>g.status==='open').length;
+  const upcoming = GRANTS.filter(g=>g.status==='upcoming').length;
+  const today = new Date(); const dd = String(today.getDate()).padStart(2,'0'); const mo = today.toLocaleString('en-GB',{month:'short'}); const yr = today.getFullYear();
+  document.getElementById('statsBar').innerHTML = `
+    <div class="stat-card"><div class="stat-label">Total Opportunities</div><div class="stat-value">${total}</div><div class="stat-sub">across 9 funders</div></div>
+    <div class="stat-card"><div class="stat-label">Open Now</div><div class="stat-value open">${open}</div><div class="stat-sub">accepting applications</div></div>
+    <div class="stat-card"><div class="stat-label">Opening Soon</div><div class="stat-value upcoming">${upcoming}</div><div class="stat-sub">upcoming calls</div></div>
+    <div class="stat-card"><div class="stat-label">Last Updated</div><div class="stat-value updated">${dd} ${mo} ${yr}</div><div class="stat-sub">auto-checks daily</div></div>`;
+}
+
+function renderSidebar() {
+  const sections = [
+    { key:'funder', label:'Funder', options: FUNDERS },
+    { key:'status', label:'Status', options: STATUSES },
+    { key:'sector', label:'Sector / Industry', options: SECTORS },
+    { key:'type', label:'Grant Type', options: TYPES },
+    { key:'eligibility', label:'Eligibility', options: ELIGIBILITIES },
+    { key:'location', label:'Location', options: LOCATIONS }
+  ];
+  const hasFilters = Object.values(activeFilters).some(v=>v.length>0);
+  let html = '';
+  if (hasFilters) html += `<button class="clear-filters-btn visible" id="clearAll">Clear all filters</button>`;
+  sections.forEach(sec => {
+    const isCollapsed = false;
+    html += `<div class="sidebar-section" data-key="${sec.key}">
+      <div class="sidebar-section-title${isCollapsed?' collapsed':''}" data-sec="${sec.key}">
+        ${sec.label}
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+      </div>
+      <div class="sidebar-options" id="opts-${sec.key}">`;
+    sec.options.forEach(opt => {
+      const active = activeFilters[sec.key].includes(opt);
+      const cnt = countFor(sec.key, opt, null);
+      if (cnt === 0 && !active) return;
+      html += `<label class="sidebar-option${active?' active':''}" data-key="${sec.key}" data-val="${esc(opt)}">
+        <span class="sidebar-check"></span>
+        ${esc(opt)}
+        <span class="option-count">${cnt}</span>
+      </label>`;
+    });
+    html += `</div></div><div class="sidebar-divider"></div>`;
+  });
+  document.getElementById('sidebar').innerHTML = html;
+  // Event listeners
+  document.querySelectorAll('.sidebar-option').forEach(el => {
+    el.addEventListener('click', () => {
+      const key = el.dataset.key; const val = el.dataset.val;
+      const idx = activeFilters[key].indexOf(val);
+      if (idx >= 0) activeFilters[key].splice(idx,1); else activeFilters[key].push(val);
+      renderAll();
+    });
+  });
+  document.querySelectorAll('.sidebar-section-title').forEach(el => {
+    el.addEventListener('click', () => {
+      const key = el.dataset.sec;
+      const opts = document.getElementById('opts-'+key);
+      const collapsed = el.classList.toggle('collapsed');
+      opts.style.display = collapsed ? 'none' : '';
+    });
+  });
+  const ca = document.getElementById('clearAll');
+  if (ca) ca.addEventListener('click', () => { activeFilters = {funder:[],status:[],sector:[],type:[],eligibility:[],location:[]}; renderAll(); });
+}
+
+function cardHtml(g) {
+  const dl = fmtDeadline(g.deadline);
+  const amtClass = g.currency === 'eur' ? 'amount-eur' : g.deadline === 'Rolling' ? 'amount-rolling' : 'amount-gbp';
+  const statusMap = { open:['status-badge-open','Open'], upcoming:['status-badge-upcoming','Upcoming'], closed:['status-badge-closed','Closed'] };
+  const [sbCls, sbLabel] = statusMap[g.status] || statusMap.open;
+  const dotCls = { open:'status-open', upcoming:'status-upcoming', closed:'status-closed' }[g.status];
+  const isSaved = savedIds.has(g.id);
+  const shown = g.sectors.slice(0,3); const extra = g.sectors.length - 3;
+  return `<div class="grant-card${isSaved?' saved-card':''}" data-id="${g.id}" tabindex="0" role="button" aria-label="${esc(g.title)}">
+    <div class="card-header">
+      <div class="card-meta">
+        <span class="funder-badge ${funderClass(g.funder)}">${esc(g.funder)}</span>
+        ${g.programme ? `<span class="programme-tag">/ ${esc(g.programme)}</span>`:''}
+      </div>
+      <div class="card-actions">
+        <div class="status-dot ${dotCls}"></div>
+        <span class="status-badge ${sbCls}">${sbLabel}</span>
+        <button class="save-btn${isSaved?' saved':''}" data-id="${g.id}" aria-label="${isSaved?'Unsave':'Save'} grant" title="${isSaved?'Remove from saved':'Save grant'}">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="${isSaved?'currentColor':'none'}" stroke="currentColor" stroke-width="2"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>
+        </button>
+      </div>
+    </div>
+    <div class="card-title">${esc(g.title)}</div>
+    <div class="card-desc">${esc(g.desc)}</div>
+    ${shown.length?`<div class="card-sectors">${shown.map(s=>`<span class="sector-tag ${sectorClass(s)}">${esc(s)}</span>`).join('')}${extra>0?`<span class="sector-tag s-default">+${extra}</span>`:''}</div>`:''}
+    <div class="card-footer">
+      <div class="card-footer-left">
+        ${g.amount?`<span class="amount ${amtClass}" title="${esc(g.amount)}">${esc(g.amount)}</span>`:''}
+        ${g.eligibility?`<span class="eligibility" title="${esc(g.eligibility)}">${esc(g.eligibility)}</span>`:''}
+      </div>
+      <div class="card-footer-right">
+        <span class="deadline ${dl.cls}">
+          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="display:inline;vertical-align:middle;margin-right:2px"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+          ${dl.label}
+        </span>
+        <a href="${esc(g.url)}" target="_blank" rel="noopener noreferrer" class="apply-link" onclick="event.stopPropagation()">
+          Apply <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+        </a>
+      </div>
+    </div>
+  </div>`;
+}
+
+function renderGrid() {
+  const filtered = sortGrants(filterGrants(GRANTS));
+  const grid = document.getElementById('grantGrid');
+  document.getElementById('resultsCount').innerHTML = `<strong>${filtered.length}</strong> <span>opportunit${filtered.length!==1?'ies':'y'} found</span>`;
+  if (filtered.length === 0) {
+    grid.innerHTML = `<div class="empty" style="grid-column:1/-1">
+      <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+      <h3>No grants found</h3><p>Try adjusting your filters or search term.</p>
+    </div>`;
+    return;
+  }
+  grid.innerHTML = filtered.map(cardHtml).join('');
+  attachCardListeners(grid);
+}
+
+function renderActiveChips() {
+  const chips = [];
+  const labels = { funder:'Funder', status:'Status', sector:'Sector', type:'Type', eligibility:'Eligibility', location:'Location' };
+  Object.entries(activeFilters).forEach(([key, vals]) => {
+    vals.forEach(v => {
+      chips.push(`<div class="active-chip">${labels[key]}: ${esc(v)} <button data-key="${key}" data-val="${esc(v)}" aria-label="Remove filter">×</button></div>`);
+    });
+  });
+  const el = document.getElementById('activeChips');
+  el.innerHTML = chips.join('');
+  el.querySelectorAll('button').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const key = btn.dataset.key; const val = btn.dataset.val;
+      activeFilters[key] = activeFilters[key].filter(v=>v!==val);
+      renderAll();
+    });
+  });
+}
+
+function renderSavedGrid() {
+  const saved = GRANTS.filter(g=>savedIds.has(g.id));
+  const grid = document.getElementById('savedGrid');
+  if (saved.length === 0) {
+    grid.innerHTML = `<div class="empty" style="grid-column:1/-1">
+      <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>
+      <h3>No saved grants yet</h3><p>Click the bookmark icon on any grant card to save it here.</p>
+    </div>`; return;
+  }
+  grid.innerHTML = saved.map(cardHtml).join('');
+  attachCardListeners(grid);
+}
+
+function updateSavedBadge() {
+  const cnt = savedIds.size;
+  const el = document.getElementById('savedCount');
+  el.textContent = cnt;
+  el.className = 'saved-count' + (cnt > 0 ? ' has-saved' : '');
+}
+
+function renderAll() {
+  renderSidebar();
+  renderGrid();
+  renderActiveChips();
+  updateSavedBadge();
+  if (viewMode === 'saved') renderSavedGrid();
+}
+
+// ── Detail panel ──────────────────────────────────────────────────────────
+function openDetail(id) {
+  const g = GRANTS.find(g=>g.id===id); if (!g) return;
+  const isSaved = savedIds.has(g.id);
+  const dl = fmtDeadline(g.deadline);
+  const amtClass = g.currency === 'eur' ? 'amount-eur' : 'amount-gbp';
+  const statusMap = { open:['status-badge-open','Open'], upcoming:['status-badge-upcoming','Upcoming'], closed:['status-badge-closed','Closed'] };
+  const [sbCls, sbLabel] = statusMap[g.status] || statusMap.open;
+  const trlPct = g.trl ? ((g.trl[1]/9)*100) + '%' : '0%';
+  const panel = document.getElementById('detailPanel');
+  panel.innerHTML = `
+    <div class="detail-top">
+      <div class="detail-close"><button id="closeDetail"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg> Close</button></div>
+      <div class="detail-funder-row"><span class="funder-badge ${funderClass(g.funder)}">${esc(g.funder)}</span>${g.programme?`<span style="font-size:12px;color:var(--text-muted)">/ ${esc(g.programme)}</span>`:''}</div>
+      <div class="detail-title">${esc(g.title)}</div>
+      <div class="detail-status-row"><span class="status-badge ${sbCls}">${sbLabel}</span><span class="deadline ${dl.cls}" style="font-size:12px;">${dl.label}</span></div>
+    </div>
+    <div class="detail-body">
+      <div class="detail-desc">${esc(g.desc)}</div>
+      <div class="detail-rows">
+        <div class="detail-row">
+          <div class="detail-row-icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg></div>
+          <div><div class="detail-row-label">Funding Amount</div><div class="detail-row-value ${amtClass}">${esc(g.amount||'Contact funder')}</div></div>
+        </div>
+        <div class="detail-row">
+          <div class="detail-row-icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg></div>
+          <div><div class="detail-row-label">Eligibility</div><div class="detail-row-value">${esc(g.eligibility||'See funder website')}</div></div>
+        </div>
+        <div class="detail-row">
+          <div class="detail-row-icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg></div>
+          <div><div class="detail-row-label">Deadline</div><div class="detail-row-value">${g.deadline === 'Rolling' ? 'Rolling / Open Call' : new Date(g.deadline).toLocaleDateString('en-GB',{weekday:'long',day:'numeric',month:'long',year:'numeric'})}</div></div>
+        </div>
+        <div class="detail-row">
+          <div class="detail-row-icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg></div>
+          <div><div class="detail-row-label">Location</div><div class="detail-row-value">${esc(g.location||'See funder website')}</div></div>
+        </div>
+        <div class="detail-row">
+          <div class="detail-row-icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg></div>
+          <div><div class="detail-row-label">Grant Type</div><div class="detail-row-value">${esc(g.type||'Grant')}</div></div>
+        </div>
+      </div>
+      ${g.sectors && g.sectors.length ? `
+      <div class="trl-label">Sectors</div>
+      <div class="detail-sectors">${g.sectors.map(s=>`<span class="sector-tag ${sectorClass(s)}">${esc(s)}</span>`).join('')}</div>`:''}
+      ${g.trl ? `
+      <div class="detail-trl">
+        <div class="trl-label">Technology Readiness Level (TRL ${g.trl[0]}–${g.trl[1]})</div>
+        <div class="trl-bar"><div class="trl-fill" style="width:${trlPct}"></div></div>
+        <div class="trl-range"><span>TRL 1 — Basic research</span><span>TRL 9 — Market</span></div>
+      </div>`:''}
+    </div>
+    <div class="detail-apply">
+      <a href="${esc(g.url)}" target="_blank" rel="noopener noreferrer" class="btn-primary">
+        Apply Now <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+      </a>
+      <button class="btn-save${isSaved?' saved':''}" id="detailSave" data-id="${g.id}">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="${isSaved?'currentColor':'none'}" stroke="currentColor" stroke-width="2"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>
+        ${isSaved?'Saved':'Save'}
+      </button>
+    </div>`;
+  document.getElementById('closeDetail').addEventListener('click', closeDetail);
+  document.getElementById('detailSave').addEventListener('click', () => { toggleSave(g.id); openDetail(g.id); });
+  document.getElementById('detailPanel').classList.add('open');
+  document.getElementById('detailOverlay').classList.add('open');
+}
+
+function closeDetail() {
+  document.getElementById('detailPanel').classList.remove('open');
+  document.getElementById('detailOverlay').classList.remove('open');
+}
+
+function toggleSave(id) {
+  if (savedIds.has(id)) savedIds.delete(id); else savedIds.add(id);
+  renderAll();
+}
+
+function attachCardListeners(container) {
+  container.querySelectorAll('.grant-card').forEach(card => {
+    card.addEventListener('click', e => {
+      if (e.target.closest('.save-btn') || e.target.closest('.apply-link')) return;
+      openDetail(card.dataset.id);
+    });
+    card.addEventListener('keydown', e => { if (e.key==='Enter'||e.key===' ') { e.preventDefault(); openDetail(card.dataset.id); }});
+  });
+  container.querySelectorAll('.save-btn').forEach(btn => {
+    btn.addEventListener('click', e => { e.stopPropagation(); toggleSave(btn.dataset.id); });
+  });
+}
+
+// ── Init ───────────────────────────────────────────────────────────────────
+renderStats();
+renderAll();
+
+// Search
+const searchInput = document.getElementById('searchInput');
+const searchClear = document.getElementById('searchClear');
+searchInput.addEventListener('input', () => {
+  searchQuery = searchInput.value.trim();
+  searchClear.className = 'search-clear' + (searchQuery ? ' visible' : '');
+  renderAll();
+});
+searchClear.addEventListener('click', () => {
+  searchInput.value = ''; searchQuery = '';
+  searchClear.className = 'search-clear';
+  renderAll();
+});
+
+// Sort
+document.getElementById('sortSelect').addEventListener('change', e => {
+  sortMode = e.target.value; renderGrid();
+});
+
+// Saved view
+document.getElementById('savedBtn').addEventListener('click', () => {
+  viewMode = 'saved';
+  document.getElementById('mainContent').classList.add('saved-mode');
+  renderSavedGrid();
+  closeDetail();
+});
+document.getElementById('backBtn').addEventListener('click', () => {
+  viewMode = 'main';
+  document.getElementById('mainContent').classList.remove('saved-mode');
+});
+
+// Overlay close
+document.getElementById('detailOverlay').addEventListener('click', closeDetail);
+document.addEventListener('keydown', e => { if (e.key==='Escape') closeDetail(); });
+</script>
+</body>
+</html>
