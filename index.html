@@ -359,9 +359,7 @@ const GRANTS = [
     { id:"iuk-12", funder:"Innovate UK", programme:"DRIVE35", title:"DRIVE35 Scale-up Fund", amount:"Up to £150,000,000", amtVal:150000000, currency:"gbp", status:"open", deadline:"Rolling", eligibility:"Business", type:"Grant", trl:[7,9], sectors:["Clean Tech","Advanced Manufacturing"], location:"UK", desc:"UK registered organisations can apply for a share of up to £150 million to create scale-up manufacturing capability for zero emission vehicles.", url:"https://apply-for-innovation-funding.service.gov.uk/competition/search" },
   { id:"iuk-13", funder:"Innovate UK", programme:"Commercialisation", title:"Commercialising Knowledge Assets Fund (CKAF) Spring", amount:"£50,000–£250,000", amtVal:250000, currency:"gbp", status:"open", deadline:"2026-05-07", eligibility:"Research Org", type:"Grant", trl:[3,6], sectors:["Deep Tech","Digital"], location:"UK", desc:"UK registered government research organisations can apply for grants from £50,000 up to £250,000 to commercialise knowledge assets and intellectual property.", url:"https://apply-for-innovation-funding.service.gov.uk/competition/search" },
   { id:"iuk-14", funder:"Innovate UK", programme:"Healthcare Innovation", title:"Contracts for Innovation: Drug & Alcohol Addiction Healthcare", amount:"Up to £20,000,000", amtVal:20000000, currency:"gbp", status:"open", deadline:"2026-05-06", eligibility:"Any Organisation", type:"Contract", trl:[4,8], sectors:["Health","Digital"], location:"UK + International", desc:"Organisations can apply for a share of £20 million to advance development and commercialisation of innovations in drug and alcohol addiction healthcare.", url:"https://apply-for-innovation-funding.service.gov.uk/competition/search" },
-  { id:"iuk-15", funder:"Innovate UK", programme:"Energy Catalyst", title:"Energy Catalyst Round 11 – Early Stage", amount:"Up to £7,000,000", amtVal:7000000, currency:"gbp", status:"open", deadline:"2026-03-25", eligibility:"SME (Intl Collab)", type:"Grant", trl:[1,4], sectors:["Clean Tech","Energy"], location:"UK + International", desc:"Organisations can apply for a share of up to £7 million for early-stage energy innovations in ODA eligible countries (sub-Saharan Africa, South Asia, Indo Pacific).", url:"https://apply-for-innovation-funding.service.gov.uk/competition/search" },
-  { id:"iuk-16", funder:"Innovate UK", programme:"EV Charging", title:"Increasing EV Charging Capacity on Strategic Road Network", amount:"Up to £10,000,000", amtVal:10000000, currency:"gbp", status:"open", deadline:"2026-03-25", eligibility:"Business (Collab)", type:"Grant", trl:[5,8], sectors:["Clean Tech","Energy","Advanced Manufacturing"], location:"UK", desc:"UK registered organisations can apply for a share of up to £10 million for development and demonstration of EV charging solutions on the strategic road network.", url:"https://apply-for-innovation-funding.service.gov.uk/competition/search" },
-
+    
   // ── UKRI ──────────────────────────────────────────────────────────────────
   { id:"ukri-01", funder:"UKRI", programme:"EPSRC", title:"EPSRC Prosperity Partnerships 2027", amount:"Up to £40,000,000", amtVal:40000000, currency:"gbp", status:"open", deadline:"2026-05-21", eligibility:"University + Business", type:"Partnership Grant", trl:[3,7], sectors:["Advanced Manufacturing","AI","Digital","Clean Tech"], location:"UK", desc:"Apply for funding to support ambitious, collaborative research programmes. Projects must be co-created and co-delivered by business and academic partners, aiming to create long-term prosperity for the UK.", url:"https://www.ukri.org/opportunity/epsrc-prosperity-partnerships-2027/" },
   { id:"ukri-02", funder:"UKRI", programme:"EPSRC", title:"EPSRC Materials Innovation Partnerships", amount:"Up to £7,500,000", amtVal:7500000, currency:"gbp", status:"open", deadline:"2026-05-14", eligibility:"University + Business", type:"Partnership Grant", trl:[3,6], sectors:["Advanced Manufacturing","Deep Tech","Clean Tech"], location:"UK", desc:"Apply for funding to support ambitious, collaborative materials research programmes co-created and co-delivered by business and academic partners.", url:"https://www.ukri.org/opportunity/epsrc-materials-innovation-partnerships/" },
@@ -896,7 +894,126 @@ searchInput.addEventListener('input', () => {
 searchClear.addEventListener('click', () => {
   searchInput.value = ''; searchQuery = '';
   searchClear.className = 'search-clear';
-  renderAll();
+  
+// ── GrantRadar Runtime Guardian ──────────────────────────────────────────────
+// Runs before renderAll(). If any check fails, shows an error banner instead
+// of silently rendering a blank page.
+(function runGuardian() {
+  const errors = [];
+  const warnings = [];
+
+  // 1. GRANTS array must exist and be non-empty
+  if (!Array.isArray(GRANTS) || GRANTS.length === 0) {
+    errors.push('GRANTS array is empty or missing');
+  }
+
+  if (GRANTS.length > 0) {
+    const VALID_STATUSES  = new Set(['open','upcoming','closed']);
+    const VALID_SECTORS   = new Set(['AI','Advanced Manufacturing','Agritech','Biotech','Clean Tech','Deep Tech','Digital','Energy','Health','Mobility','Social Sciences']);
+    const VALID_CURRENCIES = new Set(['gbp','eur']);
+    const REQUIRED = ['id','funder','title','amount','amtVal','currency','status','deadline','eligibility','type','trl','sectors','location','desc','url'];
+
+    for (const g of GRANTS) {
+      // 2. Required fields
+      for (const f of REQUIRED) {
+        if (g[f] === undefined || g[f] === null || g[f] === '') {
+          errors.push(`Grant ${g.id||'?'}: missing required field "${f}"`);
+        }
+      }
+      // 3. Status must be exactly open/upcoming/closed
+      if (!VALID_STATUSES.has(g.status)) {
+        errors.push(`Grant ${g.id}: status="${g.status}" is invalid (must be open/upcoming/closed)`);
+      }
+      // 4. Sectors must be an array
+      if (!Array.isArray(g.sectors) || g.sectors.length === 0) {
+        errors.push(`Grant ${g.id}: sectors must be a non-empty array`);
+      }
+      // 5. Deadline format
+      if (g.deadline && g.deadline !== 'Rolling' && g.deadline !== 'TBC') {
+        if (!/^\d{4}-\d{2}-\d{2}$/.test(g.deadline)) {
+          errors.push(`Grant ${g.id}: deadline "${g.deadline}" is not YYYY-MM-DD format`);
+        }
+      }
+      // 6. amtVal must be number
+      if (typeof g.amtVal !== 'number') {
+        errors.push(`Grant ${g.id}: amtVal must be a number, got ${typeof g.amtVal}`);
+      }
+      // 7. trl must be [min, max] array
+      if (!Array.isArray(g.trl) || g.trl.length !== 2) {
+        errors.push(`Grant ${g.id}: trl must be [min, max] array`);
+      }
+    }
+
+    // 8. Duplicate IDs
+    const idsSeen = {};
+    for (const g of GRANTS) { idsSeen[g.id] = (idsSeen[g.id]||0)+1; }
+    const dupIds = Object.entries(idsSeen).filter(([,v])=>v>1).map(([k])=>k);
+    if (dupIds.length) errors.push(`Duplicate grant IDs: ${dupIds.join(', ')}`);
+
+    // 9. Test cardHtml on first 3 grants to catch rendering crashes early
+    try {
+      const samples = GRANTS.slice(0, 3);
+      for (const g of samples) {
+        const html = cardHtml(g);
+        if (typeof html !== 'string' || html.length < 50) {
+          errors.push(`cardHtml(${g.id}): returned invalid HTML`);
+        }
+      }
+    } catch(e) {
+      errors.push(`cardHtml() crashed: ${e.message}`);
+    }
+
+    // 10. Test filterGrants
+    try {
+      const filtered = filterGrants(GRANTS);
+      if (filtered.length === 0 && GRANTS.length > 0) {
+        errors.push('filterGrants() returned 0 results for unfiltered grants — all grants hidden');
+      }
+    } catch(e) {
+      errors.push(`filterGrants() crashed: ${e.message}`);
+    }
+  }
+
+  if (errors.length === 0) {
+    // All good — proceed normally
+    console.log('[GrantRadar Guardian] ✓ All checks passed');
+    return;
+  }
+
+  // ── Show error banner instead of blank page ────────────────────────────────
+  console.error('[GrantRadar Guardian] ERRORS:', errors);
+
+  // Render the stats bar normally (it just uses GRANTS.length, usually works)
+  try { renderStats(); } catch(e) {}
+
+  // Replace grant grid with a clear error panel
+  const grid = document.getElementById('grantGrid');
+  if (grid) {
+    grid.innerHTML = `
+      <div style="grid-column:1/-1;background:#1a0a0a;border:1px solid #f87171;border-radius:12px;padding:24px 28px;color:#fca5a5;font-family:inherit;">
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px;">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#f87171" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+          <strong style="font-size:15px;color:#f87171;">Dashboard data error detected</strong>
+        </div>
+        <p style="font-size:13px;color:#e6edf3;margin-bottom:12px;">
+          The GrantRadar guardian caught ${errors.length} issue${errors.length>1?'s':''} that would cause grants not to display.
+          The dashboard has been protected from showing a blank page.
+        </p>
+        <ul style="font-size:12px;color:#fca5a5;margin:0;padding-left:16px;line-height:1.8;">
+          ${errors.map(e => `<li>${e}</li>`).join('')}
+        </ul>
+        <p style="font-size:11px;color:#8b949e;margin-top:14px;">
+          This error has been logged to the browser console. The daily refresh will attempt to fix this automatically. 
+          If the issue persists, the data file needs manual repair.
+        </p>
+      </div>`;
+  }
+
+  // Stop normal rendering
+  throw new Error('[GrantRadar Guardian] Rendering halted — data errors found');
+})();
+
+renderAll();
 });
 
 // Sort
