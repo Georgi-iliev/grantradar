@@ -1,0 +1,54 @@
+name: GrantRadar weekly refresh
+
+# Replaces the old (now-defunct) Perplexity Computer scheduled agent.
+# scripts/refresh.mjs asks the OpenAI API for current funding calls, validates
+# them, updates the GRANTS array in index.html (and marks past-deadline grants
+# closed), runs the test suite, and commits. GitHub Pages then auto-deploys the
+# live site at grants.cbitvb.uk.
+#
+# Mondays 07:00 BST = 06:00 UTC. (GitHub cron is always UTC; in GMT winter
+# months this fires at 07:00 local, which is acceptable.)
+on:
+  schedule:
+    - cron: "0 6 * * 1"
+  workflow_dispatch: {}   # allows manual "Run workflow" from the Actions tab
+
+permissions:
+  contents: write          # lets the job commit & push to main
+
+concurrency:
+  group: grantradar-refresh
+  cancel-in-progress: false
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Refresh grant data (OpenAI)
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          # OPENAI_MODEL: gpt-4.1          # override here if desired
+        run: node scripts/refresh.mjs
+
+      - name: Run test suite (gate)
+        run: node grantradar-tests.js
+
+      - name: Commit & push if changed
+        run: |
+          if [ -z "$(git status --porcelain index.html)" ]; then
+            echo "No changes — nothing to commit."
+            exit 0
+          fi
+          git config user.name  "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add index.html
+          git commit -m "GrantRadar weekly refresh ($(date -u +%Y-%m-%d))"
+          git push
