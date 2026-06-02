@@ -64,15 +64,21 @@ function nextId(funder) {
 }
 
 // ── Step 1: mark past-deadline grants closed (deterministic, no LLM) ─────────
-let expiredCount = 0;
-const newRegion = region.replace(/\{[^\n]*\}/g, (line) => {
-  const dl = line.match(/deadline:"(\d{4}-\d{2}-\d{2})"/);
-  if (dl && dl[1] < todayISO && /status:"(open|upcoming)"/.test(line)) {
+// Keep a closed call as a record until 14 days after its deadline, then drop it.
+const CUTOFF = new Date(TODAY); CUTOFF.setDate(CUTOFF.getDate() - 14);
+const cutoffISO = CUTOFF.toISOString().slice(0, 10);
+let expiredCount = 0, droppedCount = 0;
+const newRegion = region.split("\n").map((line) => {
+  const dlm = line.match(/deadline:"(\d{4}-\d{2}-\d{2})"/);
+  if (!dlm) return line;                                  // comment/blank/non-dated — keep
+  const dl = dlm[1];
+  if (dl < cutoffISO) { droppedCount++; return null; }    // >14 days past deadline — remove
+  if (dl < todayISO && /status:"(open|upcoming)"/.test(line)) {
     expiredCount++;
-    return line.replace(/status:"(open|upcoming)"/, 'status:"closed"');
+    return line.replace(/status:"(open|upcoming)"/, 'status:"closed"'); // 1–14 days past — keep, mark closed
   }
   return line;
-});
+}).filter(l => l !== null).join("\n");
 html = html.slice(0, startIdx) + newRegion + html.slice(sentIdx);
 
 // ── Step 2: ask OpenAI for new open calls ────────────────────────────────────
@@ -195,11 +201,31 @@ function serialize(g) {
     `desc:${jsStr(g.desc)}, url:${jsStr(g.url)} },\n`;
 }
 
+// Verify a proposed call's URL actually exists, to drop hallucinated/dead links.
+// Lenient by design: many funder sites sit behind bot protection and answer 403
+// to a plain fetch, so reject only clear "does not exist" signals (404/410) and
+// hard network failures (bad domain, timeout).
+async function urlOk(url) {
+  const ctrl = new AbortController();
+  const timer = setTimeout(() => ctrl.abort(), 12000);
+  try {
+    const res = await fetch(url, {
+      method: "GET", redirect: "follow", signal: ctrl.signal,
+      headers: { "User-Agent": "Mozilla/5.0 (compatible; GrantRadarBot/1.0; +https://grants.cbitvb.uk)" },
+    });
+    return !(res.status === 404 || res.status === 410);
+  } catch {
+    return false;
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
 // ── Run: one web search per funder, validating + deduping inline ─────────────
 // Accepting a grant adds its url/title to the existing-sets immediately, so a
 // later funder's search cannot re-add the same call.
 const accepted = [];
-let rejected = 0;
+let rejected = 0, deadLinks = 0;
 for (const funder of FUNDERS) {
   let got = [];
   try {
@@ -210,14 +236,12 @@ for (const funder of FUNDERS) {
   }
   let acc = 0;
   for (const g of got) {
-    if (valid(g)) {
-      accepted.push(g);
-      existingUrls.add(g.url.toLowerCase());
-      existingTitles.add(g.title.toLowerCase());
-      acc++;
-    } else {
-      rejected++;
-    }
+    if (!valid(g)) { rejected++; continue; }
+    if (!(await urlOk(g.url))) { deadLinks++; continue; }   // dead/fabricated link — skip
+    accepted.push(g);
+    existingUrls.add(g.url.toLowerCase());
+    existingTitles.add(g.title.toLowerCase());
+    acc++;
   }
   console.log(`[diag] ${funder}: ${got.length} proposed, ${acc} accepted`);
 }
@@ -235,4 +259,4 @@ if (lines) {
 }
 
 writeFileSync(HTML, html);
-console.log(`Refresh done: +${accepted.length} new grant(s), ${expiredCount} marked closed, ${rejected} rejected by validation.`);
+console.log(`Refresh done: +${accepted.length} new, ${expiredCount} marked closed, ${droppedCount} dropped (>14d past), ${rejected} rejected by validation, ${deadLinks} skipped (dead URL).`);
