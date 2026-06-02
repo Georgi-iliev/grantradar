@@ -86,7 +86,9 @@ Use web search to find funding calls that are CURRENTLY OPEN (or clearly upcomin
 from these funders ONLY (use these exact funder names):
 Innovate UK, UKRI, SBRI, Wellcome Trust, EIC Europe, Horizon Europe, EIT Europe, Eureka, ERC.
 
-Return ONLY a JSON array (no prose, no markdown fences) of up to 12 NEW calls.
+Search EACH funder's official "open calls" / "funding opportunities" pages and be
+thorough — there are many open calls right now. Return ONLY a JSON array (no prose,
+no markdown fences) of up to 40 NEW calls, covering as many funders as you can.
 Each element MUST be an object with these fields:
   funder      : one of the exact names above
   programme   : short string
