@@ -81,16 +81,17 @@ if (!KEY) { console.error("FATAL: OPENAI_API_KEY not set."); process.exit(1); }
 const MODEL = process.env.OPENAI_MODEL || "gpt-4.1";
 const SEARCH_TOOL = process.env.OPENAI_SEARCH_TOOL || "web_search_preview";
 
-const prompt = `You are updating a UK & EU research-funding dashboard. Today is ${todayISO}.
-Use web search to find funding calls that are CURRENTLY OPEN (or clearly upcoming)
-from these funders ONLY (use these exact funder names):
-Innovate UK, UKRI, SBRI, Wellcome Trust, EIC Europe, Horizon Europe, EIT Europe, Eureka, ERC.
+const FUNDERS = ["Innovate UK","UKRI","SBRI","Wellcome Trust","EIC Europe","Horizon Europe","EIT Europe","Eureka","ERC"];
 
-Search EACH funder's official "open calls" / "funding opportunities" pages and be
-thorough — there are many open calls right now. Return ONLY a JSON array (no prose,
-no markdown fences) of up to 40 NEW calls, covering as many funders as you can.
-Each element MUST be an object with these fields:
-  funder      : one of the exact names above
+function promptFor(funder) {
+  return `You are updating a UK & EU research-funding dashboard. Today is ${todayISO}.
+Use web search to find funding calls from ${funder} ONLY that are CURRENTLY OPEN
+(or clearly upcoming). Search ${funder}'s official "open calls" / "funding
+opportunities" pages thoroughly and include as many genuinely open calls as you find.
+
+Return ONLY a JSON array (no prose, no markdown fences). Each element MUST be an
+object with these fields:
+  funder      : exactly "${funder}"
   programme   : short string
   title       : string
   amount      : human-readable string, e.g. "Up to £2,000,000"
@@ -113,8 +114,9 @@ genuinely new calls, return [].
 
 EXISTING URLS:
 ${[...existingUrls].join("\n")}`;
+}
 
-async function callOpenAI() {
+async function callOpenAI(prompt) {
   const res = await fetch("https://api.openai.com/v1/responses", {
     method: "POST",
     headers: { "Authorization": `Bearer ${KEY}`, "Content-Type": "application/json" },
@@ -129,7 +131,6 @@ async function callOpenAI() {
   // a web_search_call item in output when it does.
   const types = Array.isArray(data.output) ? data.output.map(o => o.type) : [];
   const searched = types.some(t => String(t).toLowerCase().includes("web_search"));
-  console.log(`[diag] model=${MODEL} tool=${SEARCH_TOOL} | output item types: ${JSON.stringify(types)} | web_search ran: ${searched}`);
   // Concatenate all output_text segments from the Responses API result.
   let text = data.output_text || "";
   if (!text && Array.isArray(data.output)) {
@@ -138,7 +139,7 @@ async function callOpenAI() {
       .filter(c => c.type === "output_text" && typeof c.text === "string")
       .map(c => c.text).join("\n");
   }
-  console.log(`[diag] response text length=${text.length}; first 1000 chars:\n${text.slice(0, 1000)}`);
+  if (!searched) console.warn(`[diag] WARN: web_search did not run for this query`);
   return text;
 }
 
@@ -194,15 +195,32 @@ function serialize(g) {
     `desc:${jsStr(g.desc)}, url:${jsStr(g.url)} },\n`;
 }
 
-// ── Run ──────────────────────────────────────────────────────────────────────
-const text = await callOpenAI();
-const proposed = extractJson(text) || [];
-console.log(`[diag] parsed proposals: ${Array.isArray(proposed) ? proposed.length : "(not an array)"}`);
-if (!Array.isArray(proposed)) {
-  console.error("WARN: OpenAI did not return a JSON array; adding no new grants.");
+// ── Run: one web search per funder, validating + deduping inline ─────────────
+// Accepting a grant adds its url/title to the existing-sets immediately, so a
+// later funder's search cannot re-add the same call.
+const accepted = [];
+let rejected = 0;
+for (const funder of FUNDERS) {
+  let got = [];
+  try {
+    got = extractJson(await callOpenAI(promptFor(funder)));
+  } catch (e) {
+    console.error(`WARN: ${funder} search failed: ${e.message}`);
+    continue;
+  }
+  let acc = 0;
+  for (const g of got) {
+    if (valid(g)) {
+      accepted.push(g);
+      existingUrls.add(g.url.toLowerCase());
+      existingTitles.add(g.title.toLowerCase());
+      acc++;
+    } else {
+      rejected++;
+    }
+  }
+  console.log(`[diag] ${funder}: ${got.length} proposed, ${acc} accepted`);
 }
-const accepted = (Array.isArray(proposed) ? proposed : []).filter(valid);
-const rejected = (Array.isArray(proposed) ? proposed : []).length - accepted.length;
 
 let lines = "";
 for (const g of accepted) {
