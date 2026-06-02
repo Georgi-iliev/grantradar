@@ -123,6 +123,11 @@ async function callOpenAI() {
     process.exit(1);
   }
   const data = await res.json();
+  // [diag] Did the hosted web-search tool actually run? The Responses API emits
+  // a web_search_call item in output when it does.
+  const types = Array.isArray(data.output) ? data.output.map(o => o.type) : [];
+  const searched = types.some(t => String(t).toLowerCase().includes("web_search"));
+  console.log(`[diag] model=${MODEL} tool=${SEARCH_TOOL} | output item types: ${JSON.stringify(types)} | web_search ran: ${searched}`);
   // Concatenate all output_text segments from the Responses API result.
   let text = data.output_text || "";
   if (!text && Array.isArray(data.output)) {
@@ -131,6 +136,7 @@ async function callOpenAI() {
       .filter(c => c.type === "output_text" && typeof c.text === "string")
       .map(c => c.text).join("\n");
   }
+  console.log(`[diag] response text length=${text.length}; first 1000 chars:\n${text.slice(0, 1000)}`);
   return text;
 }
 
@@ -177,6 +183,7 @@ function serialize(g) {
 // ── Run ──────────────────────────────────────────────────────────────────────
 const text = await callOpenAI();
 const proposed = extractJson(text) || [];
+console.log(`[diag] parsed proposals: ${Array.isArray(proposed) ? proposed.length : "(not an array)"}`);
 if (!Array.isArray(proposed)) {
   console.error("WARN: OpenAI did not return a JSON array; adding no new grants.");
 }
