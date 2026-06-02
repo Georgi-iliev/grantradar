@@ -116,7 +116,7 @@ async function callOpenAI() {
   const res = await fetch("https://api.openai.com/v1/responses", {
     method: "POST",
     headers: { "Authorization": `Bearer ${KEY}`, "Content-Type": "application/json" },
-    body: JSON.stringify({ model: MODEL, tools: [{ type: SEARCH_TOOL }], input: prompt }),
+    body: JSON.stringify({ model: MODEL, tools: [{ type: SEARCH_TOOL }], input: prompt, max_output_tokens: 16000 }),
   });
   if (!res.ok) {
     console.error(`FATAL: OpenAI API ${res.status}: ${await res.text()}`);
@@ -142,8 +142,20 @@ async function callOpenAI() {
 
 function extractJson(text) {
   const fenced = text.match(/```(?:json)?\s*([\s\S]*?)```/);
-  const raw = fenced ? fenced[1] : text.slice(text.indexOf("["), text.lastIndexOf("]") + 1);
-  try { return JSON.parse(raw); } catch { return null; }
+  const body = fenced ? fenced[1] : text;
+  // 1) Fast path: parse the whole array if it's well-formed.
+  const a = body.indexOf("["), b = body.lastIndexOf("]");
+  if (a !== -1 && b > a) {
+    try { const arr = JSON.parse(body.slice(a, b + 1)); if (Array.isArray(arr)) return arr; } catch {}
+  }
+  // 2) Resilient fallback: parse each flat {...} object on its own. Grant objects
+  //    contain no nested braces, so this recovers from a truncated final object or
+  //    any trailing prose without losing the complete ones.
+  const objs = [];
+  for (const m of body.matchAll(/\{[^{}]*\}/g)) {
+    try { objs.push(JSON.parse(m[0])); } catch {}
+  }
+  return objs;
 }
 
 // ── Step 3: validate every proposed grant ────────────────────────────────────
