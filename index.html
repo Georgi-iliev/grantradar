@@ -481,6 +481,18 @@ const GRANTS = [
 // ── Helpers ────────────────────────────────────────────────────────────────
 const esc = s => s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 
+// Returns the real-time effective status, overriding stale "open"/"upcoming"
+// stored values for grants whose deadline has already passed.
+function effectiveStatus(g) {
+  if (g.status === 'closed') return 'closed';
+  if (g.deadline && g.deadline !== 'Rolling' && g.deadline !== 'TBC') {
+    const d = new Date(g.deadline); d.setHours(0,0,0,0);
+    const now = new Date(); now.setHours(0,0,0,0);
+    if (d < now) return 'closed';
+  }
+  return g.status;
+}
+
 function daysUntil(deadline) {
   if (!deadline || deadline === 'Rolling') return null;
   const d = new Date(deadline); const now = new Date();
@@ -587,7 +599,7 @@ function filterGrants(grants) {
       if (![g.title,g.funder,g.programme||'',g.desc,g.sectors.join(' '),g.eligibility,g.location||''].join(' ').toLowerCase().includes(q)) return false;
     }
     if (activeFilters.funder.length && !activeFilters.funder.includes(g.funder)) return false;
-    if (activeFilters.status.length && !activeFilters.status.includes(g.status.charAt(0).toUpperCase()+g.status.slice(1))) return false;
+    if (activeFilters.status.length && !activeFilters.status.includes(effectiveStatus(g).charAt(0).toUpperCase()+effectiveStatus(g).slice(1))) return false;
     if (activeFilters.sector.length && !activeFilters.sector.some(s => g.sectors.includes(s))) return false;
     if (activeFilters.type.length && !activeFilters.type.includes(normType(g.type))) return false;
     if (activeFilters.eligibility.length && !activeFilters.eligibility.some(e => normElig(g.eligibility).includes(e) || g.eligibility.toLowerCase().includes(e.toLowerCase()))) return false;
@@ -621,14 +633,14 @@ function countFor(key, value, currentGrants) {
       if (![g.title,g.funder,g.programme||'',g.desc,g.sectors.join(' '),g.eligibility,g.location||''].join(' ').toLowerCase().includes(ql)) return false;
     }
     if (key !== 'funder' && tempFilters.funder.length && !tempFilters.funder.includes(g.funder)) return false;
-    if (key !== 'status' && tempFilters.status.length && !tempFilters.status.includes(g.status.charAt(0).toUpperCase()+g.status.slice(1))) return false;
+    if (key !== 'status' && tempFilters.status.length && !tempFilters.status.includes(effectiveStatus(g).charAt(0).toUpperCase()+effectiveStatus(g).slice(1))) return false;
     if (key !== 'sector' && tempFilters.sector.length && !tempFilters.sector.some(s => g.sectors.includes(s))) return false;
     if (key !== 'type' && tempFilters.type.length && !tempFilters.type.includes(normType(g.type))) return false;
     if (key !== 'eligibility' && tempFilters.eligibility.length && !tempFilters.eligibility.some(e => normElig(g.eligibility).includes(e) || g.eligibility.toLowerCase().includes(e.toLowerCase()))) return false;
     if (key !== 'location' && tempFilters.location.length && !tempFilters.location.some(l => normalise(g.location) === l)) return false;
     // match this specific value
     if (key === 'funder') return g.funder === value;
-    if (key === 'status') return (g.status.charAt(0).toUpperCase()+g.status.slice(1)) === value;
+    if (key === 'status') return (effectiveStatus(g).charAt(0).toUpperCase()+effectiveStatus(g).slice(1)) === value;
     if (key === 'sector') return g.sectors.includes(value);
     if (key === 'type') return normType(g.type) === value;
     if (key === 'eligibility') return normElig(g.eligibility).includes(value) || g.eligibility.toLowerCase().includes(value.toLowerCase());
@@ -640,8 +652,8 @@ function countFor(key, value, currentGrants) {
 // ── Render functions ───────────────────────────────────────────────────────
 function renderStats() {
   const total = GRANTS.length;
-  const open = GRANTS.filter(g=>g.status==='open').length;
-  const upcoming = GRANTS.filter(g=>g.status==='upcoming').length;
+  const open = GRANTS.filter(g=>effectiveStatus(g)==='open').length;
+  const upcoming = GRANTS.filter(g=>effectiveStatus(g)==='upcoming').length;
   const today = new Date(); const dd = String(today.getDate()).padStart(2,'0'); const mo = today.toLocaleString('en-GB',{month:'short'}); const yr = today.getFullYear();
   document.getElementById('statsBar').innerHTML = `
     <div class="stat-card"><div class="stat-label">Total Opportunities</div><div class="stat-value">${total}</div><div class="stat-sub">across 9 funders</div></div>
@@ -709,8 +721,9 @@ function cardHtml(g) {
   const dl = fmtDeadline(g.deadline);
   const amtClass = g.currency === 'eur' ? 'amount-eur' : g.deadline === 'Rolling' ? 'amount-rolling' : 'amount-gbp';
   const statusMap = { open:['status-badge-open','Open'], upcoming:['status-badge-upcoming','Upcoming'], closed:['status-badge-closed','Closed'] };
-  const [sbCls, sbLabel] = statusMap[g.status] || statusMap.open;
-  const dotCls = { open:'status-open', upcoming:'status-upcoming', closed:'status-closed' }[g.status];
+  const es = effectiveStatus(g);
+  const [sbCls, sbLabel] = statusMap[es] || statusMap.open;
+  const dotCls = { open:'status-open', upcoming:'status-upcoming', closed:'status-closed' }[es];
   const isSaved = savedIds.has(g.id);
   const shown = g.sectors.slice(0,3); const extra = g.sectors.length - 3;
   return `<div class="grant-card${isSaved?' saved-card':''}" data-id="${g.id}" tabindex="0" role="button" aria-label="${esc(g.title)}">

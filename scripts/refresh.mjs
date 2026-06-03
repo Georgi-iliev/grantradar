@@ -64,8 +64,8 @@ function nextId(funder) {
 }
 
 // ── Step 1: mark past-deadline grants closed (deterministic, no LLM) ─────────
-// Keep a closed call as a record until 14 days after its deadline, then drop it.
-const CUTOFF = new Date(TODAY); CUTOFF.setDate(CUTOFF.getDate() - 14);
+// Keep a closed call as a record for 3 days after its deadline, then drop it.
+const CUTOFF = new Date(TODAY); CUTOFF.setDate(CUTOFF.getDate() - 3);
 const cutoffISO = CUTOFF.toISOString().slice(0, 10);
 let expiredCount = 0, droppedCount = 0;
 const newRegion = region.split("\n").map((line) => {
@@ -91,32 +91,36 @@ const FUNDERS = ["Innovate UK","UKRI","SBRI","Wellcome Trust","EIC Europe","Hori
 
 function promptFor(funder) {
   return `You are updating a UK & EU research-funding dashboard. Today is ${todayISO}.
-Use web search to find funding calls from ${funder} ONLY that are CURRENTLY OPEN
-(or clearly upcoming). Search ${funder}'s official "open calls" / "funding
-opportunities" pages thoroughly and include as many genuinely open calls as you find.
 
-Return ONLY a JSON array (no prose, no markdown fences). Each element MUST be an
-object with these fields:
+Use web search to find EVERY open or upcoming funding call from ${funder} with a deadline on or after ${todayISO} (or "Rolling" / "TBC").
+
+Search strategy — do ALL of the following:
+1. Search ${funder}'s main "open calls" or "funding opportunities" listing page.
+2. Check individual programme/theme/topic pages for sub-calls not surfaced on the main page.
+3. Search news/announcements pages for recently opened or upcoming calls.
+4. Where ${funder} runs multiple distinct programmes (e.g. EPSRC, MRC, BBSRC, NERC, ESRC, AHRC, STFC, Innovate UK for UKRI; Pathfinder, Transition, Accelerator for EIC; EIT KICs for EIT), search each programme separately.
+5. Include both currently OPEN calls (accepting applications now) and clearly UPCOMING calls (announced but not yet open, or opening soon).
+
+Return ONLY a JSON array (no prose, no markdown fences). Each element MUST have:
   funder      : exactly "${funder}"
-  programme   : short string
+  programme   : specific programme/theme within ${funder}
   title       : string
   amount      : human-readable string, e.g. "Up to £2,000,000"
-  amtVal      : number (the headline figure, no currency symbol/commas)
+  amtVal      : number (headline figure, no symbols/commas)
   currency    : "gbp" or "eur"
   status      : "open" or "upcoming"
-  deadline    : "YYYY-MM-DD", or "Rolling", or "TBC". Must be on/after ${todayISO} if a date.
+  deadline    : "YYYY-MM-DD" on/after ${todayISO}, or "Rolling", or "TBC"
   eligibility : string
   type        : string
-  trl         : [min, max] two integers 1-9
+  trl         : [min, max] two integers 1–9
   sectors     : non-empty array; each value from EXACTLY this list:
                 AI, Advanced Manufacturing, Agritech, Biotech, Clean Tech, Deep Tech,
                 Digital, Energy, Health, Mobility, Social Sciences
   location    : string
-  desc        : 1-2 sentence string
-  url         : official funder page for the call (https)
+  desc        : 1–2 sentence string
+  url         : direct official page for the call (https)
 
-Do NOT include any call whose url or title already appears below. If you find no
-genuinely new calls, return [].
+Do NOT include any call whose url or title already appears below. Return [] if nothing new.
 
 EXISTING URLS:
 ${[...existingUrls].join("\n")}`;
@@ -126,7 +130,7 @@ async function callOpenAI(prompt) {
   const res = await fetch("https://api.openai.com/v1/responses", {
     method: "POST",
     headers: { "Authorization": `Bearer ${KEY}`, "Content-Type": "application/json" },
-    body: JSON.stringify({ model: MODEL, tools: [{ type: SEARCH_TOOL }], input: prompt, max_output_tokens: 16000 }),
+    body: JSON.stringify({ model: MODEL, tools: [{ type: SEARCH_TOOL }], input: prompt, max_output_tokens: 32000 }),
   });
   if (!res.ok) {
     console.error(`FATAL: OpenAI API ${res.status}: ${await res.text()}`);
